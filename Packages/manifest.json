@@ -3,6 +3,7 @@
     "com.meta.movement": "https://github.com/oculus-samples/Unity-Movement.git",
     "com.meta.xr.sdk.core": "74.0.0",
     "com.meta.xr.sdk.interaction.ovr": "74.0.1",
+    "com.unity.2d.sprite": "1.0.0",
     "com.unity.ai.navigation": "2.0.7",
     "com.unity.collab-proxy": "2.7.1",
     "com.unity.ide.rider": "3.0.31",
