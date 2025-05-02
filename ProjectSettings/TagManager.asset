@@ -11,8 +11,8 @@ TagManager:
   - HiddenMesh
   - Water
   - UI
-  - 
-  - 
+  - agent
+  - object
   - 
   - 
   - Character
