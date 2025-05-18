@@ -14,7 +14,7 @@ namespace ZeeeingGaze
         [SerializeField] private float interactionRadius = 0.05f; // 상호작용 영역 반경
         
         [Header("Events")]
-        [SerializeField] private UnityEvent<GameObject> OnObjectHover;
+        [SerializeField] public UnityEvent<GameObject> OnObjectHover;
         [SerializeField] private UnityEvent<GameObject> OnObjectHoverExit;
         
         [Header("Visual Feedback")]

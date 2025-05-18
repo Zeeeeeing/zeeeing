@@ -154,12 +154,6 @@ namespace ZeeeingGaze
             }
         }
         
-        private void OnDisable()
-        {
-            // 비활성화될 때 필요한 정리 작업
-            StopAllCoroutines();
-        }
-        
         private void Start()
         {
             SetupEyeInteractable();
@@ -358,6 +352,30 @@ namespace ZeeeingGaze
                 Debug.LogError($"[{gameObject.name}] 감정 반응 처리 중 오류 발생: {e.Message}");
             }
         }
+
+        // NPCEmotionController.cs에 추가할 메서드
+        public void ReactToPlayerEmotion(EmotionState playerEmotion, float interactionTime)
+        {
+            // NPCInteractionManager에서 이미 구현했으므로 중복 코드는 필요 없음
+            // 그러나 필요한 경우 여기에 더 복잡한 로직을 추가할 수 있음
+            
+            // 플레이어 감정과 NPC 감정이 일치하면 강한 반응
+            if (playerEmotion == currentEmotion)
+            {
+                // 같은 감정일 때 감정 강도가 더 빠르게 증가
+                float intensityIncrease = 0.05f * interactionTime * 0.1f;
+                currentEmotionIntensity += intensityIncrease;
+                currentEmotionIntensity = Mathf.Clamp01(currentEmotionIntensity);
+                
+                // 강도가 임계값 이상이면 이벤트 발생
+                if (currentEmotionIntensity >= 0.7f && !isEmotionTriggered)
+                {
+                    EmotionEventData eventData = new EmotionEventData(currentEmotion, currentEmotionIntensity, gameObject);
+                    OnEmotionTriggered(eventData);
+                    isEmotionTriggered = true;
+                }
+            }
+        }
         
         // 감정 증가 배율 계산 (추가 로직 가능)
         private float GetEmotionBuildupMultiplier()
@@ -397,7 +415,42 @@ namespace ZeeeingGaze
                 // 애니메이션 재생
                 if (animator != null && mapping.emotionAnimation != null)
                 {
-                    animator.Play(mapping.emotionAnimation.name);
+                    try
+                    {
+                        // 애니메이터가 상태를 가지고 있는지 먼저 확인
+                        AnimatorStateInfo[] stateInfos = new AnimatorStateInfo[animator.layerCount];
+                        bool hasState = false;
+                        
+                        for (int i = 0; i < animator.layerCount; i++)
+                        {
+                            stateInfos[i] = animator.GetCurrentAnimatorStateInfo(i);
+                            if (stateInfos[i].IsName(mapping.emotionAnimation.name))
+                            {
+                                hasState = true;
+                                animator.Play(mapping.emotionAnimation.name, i);
+                                break;
+                            }
+                        }
+                        
+                        if (!hasState && animator.layerCount > 0)
+                        {
+                            // 기본 레이어에서 시도
+                            animator.Play(mapping.emotionAnimation.name, 0);
+                        }
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"[{gameObject.name}] 애니메이션 재생 중 오류: {e.Message}");
+                        
+                        // 기본 Idle 애니메이션 시도
+                        try {
+                            if (animator.layerCount > 0)
+                                animator.Play("Idle", 0);
+                        }
+                        catch {
+                            // 무시
+                        }
+                    }
                 }
                 
                 // 사운드 효과 재생
@@ -562,6 +615,7 @@ namespace ZeeeingGaze
         }
         
         // 외부에서 호출 가능한 감정 상태 변경 메소드
+        // NPCEmotionController.cs에서 ChangeEmotionState 메서드 수정
         public void ChangeEmotionState(EmotionState newEmotion)
         {
             try
@@ -595,7 +649,32 @@ namespace ZeeeingGaze
                     // 애니메이션 파라미터가 있는지 확인 후 설정
                     try
                     {
-                        animator.SetInteger("EmotionState", (int)currentEmotion);
+                        // 수정된 부분: 파라미터 존재 확인 후 설정
+                        AnimatorControllerParameter[] parameters = animator.parameters;
+                        bool hasEmotionStateParam = false;
+                        
+                        foreach (var param in parameters)
+                        {
+                            if (param.name == "EmotionState")
+                            {
+                                hasEmotionStateParam = true;
+                                break;
+                            }
+                        }
+                        
+                        if (hasEmotionStateParam)
+                        {
+                            animator.SetInteger("EmotionState", (int)currentEmotion);
+                        }
+                        else
+                        {
+                            // 파라미터가 없으면 트리거 이름으로 시도
+                            string triggerName = GetEmotionTriggerName(currentEmotion);
+                            if (!string.IsNullOrEmpty(triggerName))
+                            {
+                                animator.SetTrigger(triggerName);
+                            }
+                        }
                     }
                     catch (System.Exception)
                     {
@@ -612,6 +691,19 @@ namespace ZeeeingGaze
             catch (System.Exception e)
             {
                 Debug.LogError($"[{gameObject.name}] 감정 상태 변경 중 오류 발생: {e.Message}");
+            }
+        }
+
+        // 새로 추가: 감정 상태에 맞는 트리거 이름 반환
+        private string GetEmotionTriggerName(EmotionState emotion)
+        {
+            switch (emotion)
+            {
+                case EmotionState.Happy: return "Happy";
+                case EmotionState.Sad: return "Sad";
+                case EmotionState.Angry: return "Angry";
+                case EmotionState.Neutral: return "Neutral";
+                default: return "";
             }
         }
         
@@ -811,7 +903,7 @@ namespace ZeeeingGaze
                 Destroy(originalMaterial);
             }
         }
-        
+
         // 외부에서 EyeInteractable 설정하는 메소드
         public void SetEyeInteractable(EyeInteractable interactable)
         {

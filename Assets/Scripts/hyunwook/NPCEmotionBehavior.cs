@@ -127,6 +127,7 @@ namespace ZeeeingGaze
         {
             // 비활성화될 때 이벤트 구독 해제
             UnsubscribeFromEmotionEvents();
+            StopAllCoroutines();
         }
         
         private void OnDestroy()
@@ -251,12 +252,18 @@ namespace ZeeeingGaze
                     }
                     break;
             }
+
+            // 행동 시작 알림
+            isPerformingBehavior = true;
+            OnBehaviorStateChanged?.Invoke(true);
             
             currentBehaviorType = newBehaviorType;
             
             if (debugMode) Debug.Log($"[{gameObject.name}] 감정 행동 실행: {eventData.Emotion}, 행동 유형: {currentBehaviorType}");
         }
-        
+
+        public event System.Action<bool> OnBehaviorStateChanged;
+
         // 현재 실행 중인 행동 중지
         private void StopCurrentBehavior()
         {
@@ -268,6 +275,9 @@ namespace ZeeeingGaze
             
             currentBehaviorType = BehaviorType.None;
             isPerformingBehavior = false;
+            
+            // 이벤트 발생
+            OnBehaviorStateChanged?.Invoke(false);
         }
         
         // 플레이어를 바라보는 코루틴
