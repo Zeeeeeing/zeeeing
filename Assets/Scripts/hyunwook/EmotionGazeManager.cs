@@ -70,7 +70,7 @@ namespace ZeeeingGaze
             }
             
             _instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
             
             // 오디오 소스 컴포넌트 가져오기
             InitializeAudioSource();

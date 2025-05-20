@@ -94,7 +94,8 @@ namespace ZeeeingGaze
             UnSelectAll();
             
             // 레이캐스트 계산
-            Ray ray = new Ray(transform.position, transform.forward);
+            OVREyeGaze eyeGaze = GetComponent<OVREyeGaze>();
+            Ray ray = new Ray(transform.position, eyeGaze.transform.forward);
             RaycastHit hit;
             
             // 레이캐스트 수행
@@ -286,6 +287,7 @@ namespace ZeeeingGaze
             // 비활성화될 때 모든 인터랙터블 선택 해제
             UnSelectAll();
             DestroyLaserVFX();
+            StopAllCoroutines();
         }
         
         private void OnDestroy()
