@@ -375,15 +375,9 @@ namespace ZeeeingGaze
         {
             Debug.Log($"[FollowerManager] OnDestroy 호출 - _instance: {_instance}, this: {this}, isCleaningUp: {isCleaningUp}");
             
-            if (_instance == this)
+            if (_instance == this && !isCleaningUp)
             {
-                // 정리 작업이 아직 실행되지 않았으면 실행
-                if (!isCleaningUp)
-                {
-                    CleanupManager();
-                }
-                
-                // 싱글톤 인스턴스 참조 제거
+                CleanupManager();
                 _instance = null;
             }
         }

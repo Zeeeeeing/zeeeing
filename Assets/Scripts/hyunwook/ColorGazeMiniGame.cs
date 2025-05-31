@@ -6,56 +6,57 @@ using ZeeeingGaze;
 
 public class ColorGazeMiniGame : MonoBehaviour
 {
-    [Header("Game Settings")]
-    [SerializeField] private int requiredMatches = 5; // 완료해야 할 매치 수
-    [SerializeField] private float timeLimit = 20f; // 시간 제한 (초)
+    [Header("Game Settings - Fast Tempo")]
+    [SerializeField] private int requiredMatches = 3; // 기본값 감소 (5 -> 3)
+    [SerializeField] private float timeLimit = 15f; // 기본값 감소 (20 -> 15)
     [SerializeField] private NPCEmotionController npcController;
-    [SerializeField] private float requiredMatchingTime = 2.0f; // 감정 일치 유지 필요 시간
+    [SerializeField] private float requiredMatchingTime = 1.5f; // 감소 (2.0 -> 1.5)
     
     [Header("Player References")]
-    [SerializeField] private PlayerEmotionController playerEmotionController; // 플레이어 감정 컨트롤러 참조 추가
+    [SerializeField] private PlayerEmotionController playerEmotionController;
     
-    [Header("Difficulty Settings")]
-    [SerializeField] private int easyRequiredMatches = 3;
-    [SerializeField] private int normalRequiredMatches = 5; 
-    [SerializeField] private int hardRequiredMatches = 7;
+    [Header("Difficulty Settings - Optimized for Demo")]
+    [SerializeField] private int easyRequiredMatches = 2; // 감소 (3 -> 2)
+    [SerializeField] private int normalRequiredMatches = 3; // 감소 (5 -> 3)
+    [SerializeField] private int hardRequiredMatches = 4; // 감소 (7 -> 4)
     
-    [SerializeField] private float easyTimeLimit = 30f;
-    [SerializeField] private float normalTimeLimit = 20f;
-    [SerializeField] private float hardTimeLimit = 15f;
+    [SerializeField] private float easyTimeLimit = 20f; // 감소 (30 -> 20)
+    [SerializeField] private float normalTimeLimit = 15f; // 감소 (20 -> 15)
+    [SerializeField] private float hardTimeLimit = 12f; // 감소 (15 -> 12)
     
     [Header("UI References")]
     [SerializeField] private Image targetColorDisplay;
     [SerializeField] private TMPro.TextMeshProUGUI timerText;
     [SerializeField] private TMPro.TextMeshProUGUI matchCountText;
     [SerializeField] private GameObject gameUI;
-    [SerializeField] private Image emotionMatchProgressBar; // 감정 매칭 진행도 표시 (새로 추가)
+    [SerializeField] private Image emotionMatchProgressBar;
     
     // 게임 상태 변수
     private EmotionState targetEmotion;
     private int matchesCompleted = 0;
     private float remainingTime;
     private bool isGameActive = false;
-    private float matchingTime = 0f; // 현재 감정 일치 시간 (새로 추가)
+    private float matchingTime = 0f;
     
     // 색상-감정 매핑용 캐시
     private Dictionary<EmotionState, Color> emotionColors = new Dictionary<EmotionState, Color>();
     
-    // 가능한 감정 상태 목록
+    // 가능한 감정 상태 목록 (간소화)
     [SerializeField] private List<EmotionState> availableEmotions = new List<EmotionState>();
     
     private void Awake()
     {
         // 게임 시작 시 UI 비활성화
-        gameUI.SetActive(false);
+        if (gameUI != null)
+            gameUI.SetActive(false);
         
-        // 사용 가능한 감정이 없으면 기본값 설정
+        // 사용 가능한 감정이 없으면 기본값 설정 (4가지로 간소화)
         if (availableEmotions.Count == 0)
         {
             availableEmotions.Add(EmotionState.Happy);
             availableEmotions.Add(EmotionState.Angry);
             availableEmotions.Add(EmotionState.Sad);
-            availableEmotions.Add(EmotionState.Interested);
+            availableEmotions.Add(EmotionState.Neutral);
         }
         
         // 플레이어 감정 컨트롤러가 없으면 찾기
@@ -108,7 +109,7 @@ public class ColorGazeMiniGame : MonoBehaviour
         if (gameUI != null)
         {
             gameUI.SetActive(true);
-            Debug.Log("ColorGazeMiniGame UI 활성화됨");
+            Debug.Log("ColorGazeMiniGame UI 활성화됨 (빠른 템포 모드)");
         }
 
         // 색상-감정 매핑 캐시 초기화
@@ -134,11 +135,11 @@ public class ColorGazeMiniGame : MonoBehaviour
     {
         emotionColors.Clear();
         
-        // 4가지 감정 상태만 사용
-        emotionColors[EmotionState.Happy] = new Color(1f, 0.8f, 0f); // 노란색
-        emotionColors[EmotionState.Sad] = new Color(0.3f, 0.5f, 0.8f); // 파란색
-        emotionColors[EmotionState.Angry] = new Color(1f, 0.3f, 0.3f); // 빨간색
-        emotionColors[EmotionState.Neutral] = Color.white; // 흰색
+        // 4가지 감정 상태만 사용 (명확한 색상 구분)
+        emotionColors[EmotionState.Happy] = new Color(1f, 0.9f, 0f); // 밝은 노란색
+        emotionColors[EmotionState.Sad] = new Color(0.2f, 0.4f, 0.9f); // 진한 파란색
+        emotionColors[EmotionState.Angry] = new Color(1f, 0.2f, 0.2f); // 진한 빨간색
+        emotionColors[EmotionState.Neutral] = new Color(0.8f, 0.8f, 0.8f); // 회색
         
         // 사용 가능한 감정 상태 목록 업데이트
         availableEmotions.Clear();
@@ -150,7 +151,24 @@ public class ColorGazeMiniGame : MonoBehaviour
     
     private void SelectRandomEmotion()
     {
-        // (기존 구현 유지)
+        if (availableEmotions.Count == 0) return;
+        
+        // 이전과 다른 감정 선택 (연속 방지)
+        EmotionState newEmotion;
+        do {
+            int randomIndex = Random.Range(0, availableEmotions.Count);
+            newEmotion = availableEmotions[randomIndex];
+        } while (newEmotion == targetEmotion && availableEmotions.Count > 1);
+        
+        targetEmotion = newEmotion;
+        
+        // 타겟 색상 표시 업데이트
+        if (targetColorDisplay != null && emotionColors.TryGetValue(targetEmotion, out Color color))
+        {
+            targetColorDisplay.color = color;
+        }
+        
+        Debug.Log($"새로운 타겟 감정: {targetEmotion} ({targetEmotion.GetEmotionName()})");
     }
     
     private void Update()
@@ -173,7 +191,7 @@ public class ColorGazeMiniGame : MonoBehaviour
         }
     }
     
-    // 플레이어 감정 확인 메서드 (새로 추가)
+    // 플레이어 감정 확인 메서드
     private void CheckPlayerEmotion()
     {
         if (playerEmotionController == null) return;
@@ -222,7 +240,7 @@ public class ColorGazeMiniGame : MonoBehaviour
         }
     }
     
-    // 플레이어 감정 변경 이벤트 핸들러 (새로 추가)
+    // 플레이어 감정 변경 이벤트 핸들러
     private void OnPlayerEmotionChanged(EmotionState newEmotion)
     {
         // 감정 변경 시 즉각 체크 - 이벤트 기반으로도 추가 확인
@@ -240,15 +258,38 @@ public class ColorGazeMiniGame : MonoBehaviour
     private void UpdateUI()
     {
         // 타이머 텍스트 업데이트
-        timerText.text = $"시간: {Mathf.CeilToInt(remainingTime)}초";
+        if (timerText != null)
+        {
+            timerText.text = $"시간: {Mathf.CeilToInt(remainingTime)}초";
+        }
         
         // 매치 카운트 업데이트
-        matchCountText.text = $"매치: {matchesCompleted}/{requiredMatches}";
+        if (matchCountText != null)
+        {
+            matchCountText.text = $"매치: {matchesCompleted}/{requiredMatches}";
+        }
     }
     
     private void PlaySuccessFeedback()
     {
-        // (기존 구현 유지)
+        // 성공 피드백 (간단하게)
+        Debug.Log($"매치 성공! ({matchesCompleted}/{requiredMatches})");
+        
+        // 컨트롤러 진동 (간단하게)
+        try
+        {
+            if (UnityEngine.XR.InputDevices.GetDeviceAtXRNode(UnityEngine.XR.XRNode.RightHand) is var device && device.TryGetHapticCapabilities(out var capabilities))
+            {
+                if (capabilities.supportsImpulse)
+                {
+                    device.SendHapticImpulse(0, 0.5f, 0.1f);
+                }
+            }
+        }
+        catch (System.Exception)
+        {
+            // VR 컨트롤러가 없을 경우 무시
+        }
     }
     
     private void GameOver(bool success)
@@ -270,7 +311,7 @@ public class ColorGazeMiniGame : MonoBehaviour
             // 게임 완료 이벤트 호출
             if (OnGameCompleted != null) 
             {
-                Debug.Log($"ColorGame 완료 이벤트 발생: 성공={success}, 점수={matchesCompleted}");
+                Debug.Log($"ColorGame 완료 이벤트 발생: 성공={success}, 점수={matchesCompleted} (빠른 템포 모드)");
                 OnGameCompleted.Invoke(success, matchesCompleted);
             }
             else
