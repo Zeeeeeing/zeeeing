@@ -26,7 +26,7 @@ public class GameUIManager : MonoBehaviour
     [Header("Control Hints")]
     [SerializeField] private GameObject controlHintsPanel;
     [SerializeField] private TextMeshProUGUI controlHintsText;
-    [SerializeField] private float hintShowDuration = 5f;
+    [SerializeField] private float hintShowDuration = 3f; // 시간 단축
     
     [Header("Debug UI")]
     [SerializeField] private GameObject debugPanel;
@@ -37,7 +37,7 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private Button neutralButton;
     [SerializeField] private Button colorGameButton;
     [SerializeField] private Button heartGameButton;
-    [SerializeField] private Button chaseGameButton;
+    // Chase 게임 버튼 제거
     [SerializeField] private TextMeshProUGUI debugInfoText;
     
     [Header("References")]
@@ -84,7 +84,7 @@ public class GameUIManager : MonoBehaviour
         UpdateScoreUI(0, 0);
         HideInteractionUI();
         
-        // 조작 도움말 표시
+        // 조작 도움말 표시 (시간 단축)
         ShowControlHints();
         
         // FollowerManager 이벤트 구독
@@ -92,7 +92,6 @@ public class GameUIManager : MonoBehaviour
         {
             ZeeeingGaze.FollowerManager.Instance.OnScoreUpdated += UpdateScoreUI;
         }
-
 
         // Debug 패널 초기 설정
         if (debugPanel != null)
@@ -104,6 +103,8 @@ public class GameUIManager : MonoBehaviour
             
         // 감정 버튼 이벤트 연결
         SetupDebugButtons();
+        
+        Debug.Log("GameUIManager 초기화 완료 (2개 미니게임 모드)");
     }
         
     private void Update()
@@ -148,31 +149,77 @@ public class GameUIManager : MonoBehaviour
         
         if (currentNPC != null)
         {
-            // 상호작용 중인 NPC가 있으면 UI 표시
-            ShowInteractionUI();
+            // 거리 기반 UI 표시 여부 결정
+            float distance = Vector3.Distance(Camera.main.transform.position, currentNPC.transform.position);
+            bool shouldShowUI = ShouldShowUIAtDistance(distance);
             
-            // NPC 이름 표시
-            if (interactionNPCNameText != null)
+            if (shouldShowUI)
             {
-                interactionNPCNameText.text = currentNPC.GetName();
+                // 상호작용 중인 NPC가 있으면 UI 표시
+                ShowInteractionUI();
+                
+                // NPC 이름 표시
+                if (interactionNPCNameText != null)
+                {
+                    interactionNPCNameText.text = currentNPC.GetName();
+                }
+                
+                // 진행률 업데이트 - 빠른 템포를 위해 조정
+                if (interactionProgressBar != null)
+                {
+                    // 미니게임 시작 시간을 2초로 단축
+                    float fillAmount = Mathf.Clamp01(Time.time % 2f / 2f);
+                    interactionProgressBar.fillAmount = fillAmount;
+                }
+                
+                // NPC 감정 표시
+                UpdateNPCEmotionIcon(currentNPC);
             }
-            
-            // 진행률 업데이트 - 필드에 직접 접근할 수 없으므로 근사치 사용
-            if (interactionProgressBar != null)
+            else
             {
-                // 미니게임 시작 시간을 3초로 가정
-                float fillAmount = Mathf.Clamp01(Time.time % 3f / 3f);
-                interactionProgressBar.fillAmount = fillAmount;
+                // 거리가 맞지 않으면 UI 숨기기
+                HideInteractionUI();
             }
-            
-            // NPC 감정 표시
-            UpdateNPCEmotionIcon(currentNPC);
         }
         else
         {
             // 상호작용 중인 NPC가 없으면 UI 숨기기
             HideInteractionUI();
         }
+    }
+    
+    // 거리에 따른 UI 표시 여부 결정
+    private bool ShouldShowUIAtDistance(float distance)
+    {
+        // 설정에 따라 다른 로직 적용
+        if (interactionManager == null) return true;
+        
+        // NPCInteractionManager의 설정 가져오기 (리플렉션 사용)
+        var showUIAtAllDistancesField = interactionManager.GetType().GetField("showUIAtAllDistances", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var uiShowDistanceField = interactionManager.GetType().GetField("uiShowDistance", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var uiHideDistanceField = interactionManager.GetType().GetField("uiHideDistance", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        bool showUIAtAllDistances = showUIAtAllDistancesField != null ? (bool)showUIAtAllDistancesField.GetValue(interactionManager) : true;
+        float uiShowDistance = uiShowDistanceField != null ? (float)uiShowDistanceField.GetValue(interactionManager) : 6.0f;
+        float uiHideDistance = uiHideDistanceField != null ? (float)uiHideDistanceField.GetValue(interactionManager) : 0.3f;
+        
+        // 모든 거리에서 표시하도록 설정되어 있으면 항상 true
+        if (showUIAtAllDistances)
+        {
+            return true;
+        }
+        
+        // 너무 가까우면 숨김 (UI가 겹치지 않도록)
+        if (distance < uiHideDistance)
+        {
+            return false;
+        }
+        
+        // 적정 거리에서 표시
+        return distance <= uiShowDistance;
     }
     
     // NPC 감정 아이콘 업데이트
@@ -231,19 +278,19 @@ public class GameUIManager : MonoBehaviour
         }
     }
     
-    // 조작 도움말 표시
+    // 조작 도움말 표시 (간소화)
     public void ShowControlHints()
     {
         if (controlHintsPanel == null) return;
         
         controlHintsPanel.SetActive(true);
         controlHintsText.text = 
-            "감정 조작 방법:\n" +
-            "● 오른쪽 트리거: 행복 감정\n" +
-            "● 왼쪽 트리거: 슬픔 감정\n" +
-            "● 오른쪽 그립: 분노 감정\n" +
-            "● B 버튼: 중립 감정\n\n" +
-            "NPC와 시선을 맞추고 감정을 표현해 호감도를 쌓으세요!";
+            "감정 조작:\n" +
+            "● 오른쪽 트리거: 행복\n" +
+            "● 왼쪽 트리거: 슬픔\n" +
+            "● 오른쪽 그립: 분노\n" +
+            "● B 버튼: 중립\n\n" +
+            "NPC와 시선을 맞추고 감정을 표현하세요!";
         
         // 이전 코루틴 중지
         if (hintCoroutine != null)
@@ -251,11 +298,11 @@ public class GameUIManager : MonoBehaviour
             StopCoroutine(hintCoroutine);
         }
         
-        // 일정 시간 후 자동 숨김
+        // 일정 시간 후 자동 숨김 (시간 단축)
         hintCoroutine = StartCoroutine(AutoHideHints());
     }
     
-    // 도움말 자동 숨김
+    // 도움말 자동 숨김 (시간 단축)
     private IEnumerator AutoHideHints()
     {
         yield return new WaitForSeconds(hintShowDuration);
@@ -310,6 +357,7 @@ public class GameUIManager : MonoBehaviour
         CancelInvoke("UpdateDebugInfo");
     }
 
+    // 디버그 버튼 설정 (Chase 버튼 제거)
     private void SetupDebugButtons()
     {
         // 감정 버튼 이벤트 연결
@@ -325,17 +373,17 @@ public class GameUIManager : MonoBehaviour
         if (neutralButton != null && playerEmotionController != null)
             neutralButton.onClick.AddListener(() => playerEmotionController.ForceSetEmotion(EmotionState.Neutral));
             
-        // 미니게임 버튼 이벤트 연결
+        // 미니게임 버튼 이벤트 연결 (Chase 버튼 제거)
         if (colorGameButton != null && miniGameManager != null)
             colorGameButton.onClick.AddListener(() => miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.ColorGaze));
             
         if (heartGameButton != null && miniGameManager != null)
             heartGameButton.onClick.AddListener(() => miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.HeartGaze));
-            
-        if (chaseGameButton != null && miniGameManager != null)
-            chaseGameButton.onClick.AddListener(() => miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.NPCChase));
+        
+        Debug.Log("디버그 버튼 설정 완료 (2개 미니게임 모드)");
     }
 
+    // 디버그 정보 업데이트 (간소화)
     private void UpdateDebugInfo()
     {
         if (debugInfoText == null) return;
@@ -375,6 +423,11 @@ public class GameUIManager : MonoBehaviour
             sb.AppendLine($"점수: {miniGameManager.GetCurrentScore()}");
             sb.AppendLine($"NPC 수: {miniGameManager.GetFollowingNPCCount()}");
         }
+        
+        // 게임 모드 정보 추가
+        sb.AppendLine("게임 모드: 2개 미니게임");
+        sb.AppendLine("- 감정 매칭 (ColorGaze)");
+        sb.AppendLine("- 하트 수집 (HeartGaze)");
         
         debugInfoText.text = sb.ToString();
     }
