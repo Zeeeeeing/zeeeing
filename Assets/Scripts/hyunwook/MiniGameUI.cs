@@ -24,10 +24,6 @@ public class MiniGameUI : MonoBehaviour
     [SerializeField] private GameObject heartGamePanel;
     [SerializeField] private TextMeshProUGUI heartsCollectedText;
     
-    [Header("Chase Game UI")]
-    [SerializeField] private GameObject chaseGamePanel;
-    [SerializeField] private TextMeshProUGUI triggerCountText;
-    
     [Header("Game Result UI")]
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TextMeshProUGUI resultText;
@@ -49,7 +45,7 @@ public class MiniGameUI : MonoBehaviour
         HideAllPanels();
         
         // 디버그 로그
-        Debug.Log("[MiniGameUI] Awake 호출됨, 모든 패널 숨김");
+        Debug.Log("[MiniGameUI] Awake 호출됨, 모든 패널 숨김 (2개 게임 모드)");
     }
     
     private void Start()
@@ -67,10 +63,10 @@ public class MiniGameUI : MonoBehaviour
         }
         
         // 초기화 완료 로그
-        Debug.Log("[MiniGameUI] Start 완료, UI 준비됨");
+        Debug.Log("[MiniGameUI] Start 완료, UI 준비됨 (ColorGaze, HeartGaze 전용)");
     }
     
-    // 모든 패널 숨기기
+    // 모든 패널 숨기기 (Chase 관련 제거)
     public void HideAllPanels()
     {
         try
@@ -82,11 +78,10 @@ public class MiniGameUI : MonoBehaviour
                 autoHideCoroutine = null;
             }
             
-            // 모든 패널 비활성화
+            // 모든 패널 비활성화 (Chase 패널 제거)
             if (miniGamePanel != null) miniGamePanel.SetActive(false);
             if (colorGamePanel != null) colorGamePanel.SetActive(false);
             if (heartGamePanel != null) heartGamePanel.SetActive(false);
-            if (chaseGamePanel != null) chaseGamePanel.SetActive(false);
             if (resultPanel != null) resultPanel.SetActive(false);
             
             // 로그
@@ -101,17 +96,17 @@ public class MiniGameUI : MonoBehaviour
         }
     }
     
-    // 디버깅용: 패널 상태 로깅
+    // 디버깅용: 패널 상태 로깅 (Chase 관련 제거)
     private void LogPanelStates()
     {
-        Debug.Log($"[MiniGameUI] 패널 상태 - miniGamePanel: {(miniGamePanel != null ? miniGamePanel.activeSelf.ToString() : "null")}, " +
+        Debug.Log($"[MiniGameUI] 패널 상태 - " +
+                  $"miniGamePanel: {(miniGamePanel != null ? miniGamePanel.activeSelf.ToString() : "null")}, " +
                   $"colorGamePanel: {(colorGamePanel != null ? colorGamePanel.activeSelf.ToString() : "null")}, " +
                   $"heartGamePanel: {(heartGamePanel != null ? heartGamePanel.activeSelf.ToString() : "null")}, " +
-                  $"chaseGamePanel: {(chaseGamePanel != null ? chaseGamePanel.activeSelf.ToString() : "null")}, " +
                   $"resultPanel: {(resultPanel != null ? resultPanel.activeSelf.ToString() : "null")}");
     }
     
-    // 미니게임 UI 표시
+    // 미니게임 UI 표시 (Chase 케이스 제거)
     public void ShowMiniGameUI(MiniGameManager.MiniGameType gameType)
     {
         try
@@ -135,7 +130,7 @@ public class MiniGameUI : MonoBehaviour
                 Debug.LogError("miniGamePanel이 null입니다!");
             }
             
-            // 게임 타입에 따른 UI 표시
+            // 게임 타입에 따른 UI 표시 (Chase 케이스 제거)
             switch (gameType)
             {
                 case MiniGameManager.MiniGameType.ColorGaze:
@@ -146,8 +141,8 @@ public class MiniGameUI : MonoBehaviour
                     ShowHeartGameUI();
                     break;
                     
-                case MiniGameManager.MiniGameType.NPCChase:
-                    ShowChaseGameUI();
+                default:
+                    Debug.LogWarning($"[MiniGameUI] 지원하지 않는 게임 타입: {gameType}");
                     break;
             }
             
@@ -160,7 +155,7 @@ public class MiniGameUI : MonoBehaviour
         }
     }
 
-    // 새로 추가할 메서드: UI 참조 확인 및 자동 찾기
+    // UI 참조 확인 및 자동 찾기 (Chase 관련 제거)
     private void EnsureUIReferences()
     {
         // 메인 미니게임 패널 참조 확인
@@ -173,7 +168,7 @@ public class MiniGameUI : MonoBehaviour
             }
         }
         
-        // 각 게임별 패널 참조 확인
+        // 각 게임별 패널 참조 확인 (Chase 제거)
         if (colorGamePanel == null)
         {
             colorGamePanel = GameObject.Find("ColorGamePanel");
@@ -184,21 +179,15 @@ public class MiniGameUI : MonoBehaviour
             heartGamePanel = GameObject.Find("HeartGamePanel");
         }
         
-        if (chaseGamePanel == null)
-        {
-            chaseGamePanel = GameObject.Find("ChaseGamePanel");
-        }
-        
         if (resultPanel == null)
         {
             resultPanel = GameObject.Find("ResultPanel");
         }
         
-        // 패널 참조 상태 로깅
+        // 패널 참조 상태 로깅 (Chase 제거)
         Debug.Log($"UI 패널 참조 상태: miniGamePanel={miniGamePanel != null}, " +
                 $"colorGamePanel={colorGamePanel != null}, " +
                 $"heartGamePanel={heartGamePanel != null}, " +
-                $"chaseGamePanel={chaseGamePanel != null}, " +
                 $"resultPanel={resultPanel != null}");
     }
     
@@ -230,21 +219,6 @@ public class MiniGameUI : MonoBehaviour
             gameInstructions.text = "시야에 나타나는 하트를 시선으로 수집하세요!";
             
         Debug.Log("[MiniGameUI] 하트 게임 UI 표시됨");
-    }
-    
-    // 추적게임 UI 표시
-    private void ShowChaseGameUI()
-    {
-        if (chaseGamePanel != null)
-            chaseGamePanel.SetActive(true);
-            
-        if (gameTitle != null)
-            gameTitle.text = "감정 유도 게임";
-            
-        if (gameInstructions != null)
-            gameInstructions.text = "NPC를 따라가며 원하는 감정 상태로 유도하세요!";
-            
-        Debug.Log("[MiniGameUI] 추적 게임 UI 표시됨");
     }
     
     // 타이머 업데이트
@@ -280,15 +254,6 @@ public class MiniGameUI : MonoBehaviour
         if (heartsCollectedText != null)
         {
             heartsCollectedText.text = $"하트: {current}/{target}";
-        }
-    }
-    
-    // 추적 게임 트리거 카운트 업데이트
-    public void UpdateTriggerCount(int current, int target)
-    {
-        if (triggerCountText != null)
-        {
-            triggerCountText.text = $"감정 유도: {current}/{target}";
         }
     }
     
@@ -343,8 +308,8 @@ public class MiniGameUI : MonoBehaviour
                     }
                 }
                 
-                // 자동으로 결과 화면을 숨기는 코루틴 시작 (5초 후)
-                autoHideCoroutine = StartCoroutine(AutoHideResultPanel(5.0f));
+                // 자동으로 결과 화면을 숨기는 코루틴 시작 (3초 후로 단축)
+                autoHideCoroutine = StartCoroutine(AutoHideResultPanel(3.0f));
                 
                 // 현재 패널 활성화 상태 로깅 (디버깅용)
                 LogPanelStates();
@@ -360,7 +325,7 @@ public class MiniGameUI : MonoBehaviour
         }
     }
     
-    // 일정 시간 후 결과 패널 자동 숨기기
+    // 일정 시간 후 결과 패널 자동 숨기기 (시간 단축)
     private IEnumerator AutoHideResultPanel(float delay)
     {
         Debug.Log($"[MiniGameUI] {delay}초 후 결과 패널 자동 숨김 예약됨");
@@ -417,13 +382,6 @@ public class MiniGameUI : MonoBehaviour
     {
         if (heartGamePanel != null)
             heartGamePanel.SetActive(false);
-    }
-    
-    // 추적 게임 UI만 숨기기
-    public void HideChaseGameUI()
-    {
-        if (chaseGamePanel != null)
-            chaseGamePanel.SetActive(false);
     }
     
     // UI 강제 숨기기 (외부에서 호출 가능)

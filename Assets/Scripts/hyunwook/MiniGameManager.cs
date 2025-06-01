@@ -9,7 +9,6 @@ public class MiniGameManager : MonoBehaviour
     [Header("MiniGame References")]
     [SerializeField] private ColorGazeMiniGame colorGazeGame;
     [SerializeField] private HeartGazeMiniGame heartGazeGame;
-    [SerializeField] private NPCChaseMiniGame chaseGame;
     
     [Header("Game Settings")]
     [SerializeField] private int baseScorePerSuccess = 100;
@@ -23,11 +22,10 @@ public class MiniGameManager : MonoBehaviour
     
     [Header("UI References")]
     [SerializeField] private TMPro.TextMeshProUGUI totalScoreText;
-    [SerializeField] private Image feverGaugeImage;
-    [SerializeField] private GameObject feverModeIndicator;
+    [SerializeField] private FeverUI feverUI; // 새로운 FeverUI 컴포넌트
     
     [Header("NPC References")] 
-    [SerializeField] private Transform playerTransform; // 플레이어 위치 (NPC가 따라갈 대상)
+    [SerializeField] private Transform playerTransform;
     
     // UI/이벤트 통합을 위한 이벤트 추가
     public event System.Action<MiniGameType> OnGameStarted;
@@ -39,16 +37,20 @@ public class MiniGameManager : MonoBehaviour
     private bool isFeverModeActive = false;
     
     // 현재 진행 중인 미니게임
-    private enum ActiveMiniGame { None, ColorGaze, HeartGaze, NPCChase }
+    private enum ActiveMiniGame { None, ColorGaze, HeartGaze }
     private ActiveMiniGame currentMiniGame = ActiveMiniGame.None;
     
     private void Awake()
     {
+        // FeverUI 자동 찾기 (Inspector에서 할당되지 않은 경우)
+        if (feverUI == null)
+        {
+            feverUI = FindFeverUIComponent();
+        }
+        
         // UI 초기화
         UpdateScoreUI();
         UpdateFeverGaugeUI();
-        if (feverModeIndicator != null)
-            feverModeIndicator.SetActive(false);
         
         // 미니게임 이벤트 구독
         SubscribeToMiniGameEvents();
@@ -59,7 +61,36 @@ public class MiniGameManager : MonoBehaviour
             playerTransform = Camera.main.transform;
         }
         
-        Debug.Log("MiniGameManager Awake 완료");
+        Debug.Log("MiniGameManager Awake 완료 (Fever UI 통합 버전)");
+    }
+    
+    /// <summary>
+    /// FeverUI 컴포넌트를 찾는 메서드 (Unity 버전 호환성 고려)
+    /// </summary>
+    private FeverUI FindFeverUIComponent()
+    {
+        FeverUI foundFeverUI = null;
+        
+        // Unity 버전에 따른 호환성 처리
+        #if UNITY_2023_1_OR_NEWER
+            foundFeverUI = FindAnyObjectByType<FeverUI>();
+        #else
+            foundFeverUI = FindObjectOfType<FeverUI>();
+        #endif
+        
+        if (foundFeverUI != null)
+        {
+            Debug.Log($"FeverUI 자동 발견: {foundFeverUI.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning("FeverUI 컴포넌트를 찾을 수 없습니다! 다음을 확인하세요:\n" +
+                           "1. FeverUI 스크립트가 씬의 어떤 오브젝트에 붙어있는지\n" +
+                           "2. 해당 오브젝트가 활성화되어 있는지\n" +
+                           "3. Inspector에서 직접 할당했는지");
+        }
+        
+        return foundFeverUI;
     }
     
     private void SubscribeToMiniGameEvents()
@@ -82,16 +113,6 @@ public class MiniGameManager : MonoBehaviour
         else
         {
             Debug.LogWarning("heartGazeGame 참조가 없습니다!");
-        }
-        
-        if (chaseGame != null)
-        {
-            chaseGame.OnGameCompleted += OnChaseGameCompleted;
-            Debug.Log("ChaseGame 이벤트 구독 완료");
-        }
-        else
-        {
-            Debug.LogWarning("chaseGame 참조가 없습니다!");
         }
     }
 
@@ -121,17 +142,14 @@ public class MiniGameManager : MonoBehaviour
         // UI 상태 디버깅
         Debug.Log("MiniGameManager 초기화 완료. UI 참조 상태:");
         Debug.Log($"totalScoreText: {(totalScoreText != null ? "있음" : "없음")}");
-        Debug.Log($"feverGaugeImage: {(feverGaugeImage != null ? "있음" : "없음")}");
-        Debug.Log($"feverModeIndicator: {(feverModeIndicator != null ? "있음" : "없음")}");
+        Debug.Log($"feverUI (새로운): {(feverUI != null ? "있음" : "없음")}");
     }
     
-    // MiniGameUI 초기화 메서드 (새로 추가)
+    // MiniGameUI 초기화 메서드
     private void InitializeMiniGameUI()
     {
-        // 여러 방법으로 MiniGameUI 컴포넌트 찾기 시도
         MiniGameUI miniGameUI = FindAnyObjectByType<MiniGameUI>();
         
-        // 못 찾았다면 씬에서 이름으로 찾기 시도
         if (miniGameUI == null)
         {
             GameObject miniGameCanvasObj = GameObject.Find("MiniGameCanvas");
@@ -153,18 +171,13 @@ public class MiniGameManager : MonoBehaviour
         if (miniGameUI != null)
         {
             Debug.Log("MiniGameUI 컴포넌트 찾음");
-            
-            // miniGameUI에 MiniGameManager 참조 설정
             miniGameUI.SetMiniGameManager(this);
             
-            // 이벤트 구독
             OnGameStarted -= miniGameUI.ShowMiniGameUI;
             OnGameStarted += miniGameUI.ShowMiniGameUI;
             
             OnGameCompleted -= miniGameUI.ShowResultUI;
             OnGameCompleted += miniGameUI.ShowResultUI;
-            
-            // 테스트 코드 제거하거나 디버그 플래그로 제어
         }
         else
         {
@@ -186,7 +199,7 @@ public class MiniGameManager : MonoBehaviour
             // 피버 게이지 증가
             IncreaseFeverGauge(feverGaugeIncreasePerSuccess);
             
-            // 성공 보상 처리 (NPC를 따라오게 하는 등)
+            // 성공 보상 처리
             HandleMiniGameSuccess(MiniGameType.ColorGaze);
         }
         
@@ -222,43 +235,22 @@ public class MiniGameManager : MonoBehaviour
         OnGameCompleted?.Invoke(success, heartsCount);
     }
     
-    // NPC 추적 미니게임 완료 처리
-    private void OnChaseGameCompleted(bool success, int triggerCount)
-    {
-        Debug.Log($"ChaseGame 완료: 성공={success}, 트리거 수={triggerCount}");
-        currentMiniGame = ActiveMiniGame.None;
-        
-        if (success)
-        {
-            int scoreGain = CalculateScore(baseScorePerSuccess * triggerCount);
-            totalScore += scoreGain;
-            
-            // 피버 게이지 증가
-            IncreaseFeverGauge(feverGaugeIncreasePerSuccess);
-            
-            // 성공 보상 처리
-            HandleMiniGameSuccess(MiniGameType.NPCChase);
-        }
-        
-        // UI 업데이트
-        UpdateScoreUI();
-        
-        // 게임 완료 이벤트 발생
-        OnGameCompleted?.Invoke(success, triggerCount);
-    }
-    
     // 현재 적용되는 점수 계산 (피버 모드 등 고려)
     private int CalculateScore(int baseScore)
     {
         return baseScore * gamePointsMultiplier * (isFeverModeActive ? feverModeScoreMultiplier : 1);
     }
     
-    // 피버 게이지 증가
+    // 피버 게이지 증가 (수정된 버전)
     private void IncreaseFeverGauge(float amount)
     {
         if (isFeverModeActive) return; // 이미 피버 모드면 게이지 증가 무시
         
+        float previousGauge = currentFeverGauge;
         currentFeverGauge += amount;
+        currentFeverGauge = Mathf.Clamp(currentFeverGauge, 0f, feverGaugeMax);
+        
+        Debug.Log($"피버 게이지 증가: {previousGauge:F2} → {currentFeverGauge:F2} (+{amount:F2})");
         
         // 피버 게이지가 최대에 도달하면 피버 모드 활성화
         if (currentFeverGauge >= feverGaugeMax)
@@ -270,7 +262,7 @@ public class MiniGameManager : MonoBehaviour
         UpdateFeverGaugeUI();
     }
     
-    // 피버 모드 활성화
+    // 피버 모드 활성화 (수정된 버전)
     private void ActivateFeverMode()
     {
         if (isFeverModeActive) return;
@@ -278,29 +270,40 @@ public class MiniGameManager : MonoBehaviour
         isFeverModeActive = true;
         currentFeverGauge = feverGaugeMax;
         
-        // 피버 모드 시각 효과 활성화
-        if (feverModeIndicator != null)
-            feverModeIndicator.SetActive(true);
+        Debug.Log("🔥 피버 모드 활성화!");
         
-        // 피버 모드 오디오/효과음 재생
-        // TODO: 오디오 재생 코드 추가
+        // 새로운 FeverUI 알림
+        if (feverUI != null)
+        {
+            feverUI.OnFeverModeStart();
+            Debug.Log("FeverUI에 피버 모드 시작 알림");
+        }
         
         // 피버 모드 타이머 시작
         StartCoroutine(FeverModeTimer());
-        Debug.Log("피버 모드 활성화!");
     }
     
-    // 피버 모드 타이머
+    // 피버 모드 타이머 (수정된 버전)
     private IEnumerator FeverModeTimer()
     {
         float remainingTime = feverModeTime;
+        
+        Debug.Log($"피버 모드 타이머 시작: {feverModeTime}초");
         
         while (remainingTime > 0)
         {
             remainingTime -= Time.deltaTime;
             
-            // 피버 게이지 UI 업데이트 (시간 경과에 따라 감소)
+            // 피버 게이지를 시간에 따라 감소
             currentFeverGauge = (remainingTime / feverModeTime) * feverGaugeMax;
+            
+            // 새로운 FeverUI 타이머 업데이트
+            if (feverUI != null)
+            {
+                feverUI.OnFeverTimerUpdate(remainingTime, feverModeTime);
+            }
+            
+            // 기존 UI도 업데이트
             UpdateFeverGaugeUI();
             
             yield return null;
@@ -310,19 +313,25 @@ public class MiniGameManager : MonoBehaviour
         DeactivateFeverMode();
     }
     
-    // 피버 모드 비활성화
+    // 피버 모드 비활성화 (수정된 버전)
     private void DeactivateFeverMode()
     {
+        if (!isFeverModeActive) return;
+        
         isFeverModeActive = false;
         currentFeverGauge = 0f;
         
-        // 피버 모드 시각 효과 비활성화
-        if (feverModeIndicator != null)
-            feverModeIndicator.SetActive(false);
+        Debug.Log("🔥 피버 모드 종료!");
+        
+        // 새로운 FeverUI 알림
+        if (feverUI != null)
+        {
+            feverUI.OnFeverModeEnd();
+            Debug.Log("FeverUI에 피버 모드 종료 알림");
+        }
         
         // UI 업데이트
         UpdateFeverGaugeUI();
-        Debug.Log("피버 모드 종료");
     }
     
     // 점수 UI 업데이트
@@ -338,41 +347,50 @@ public class MiniGameManager : MonoBehaviour
         }
     }
     
-    // 피버 게이지 UI 업데이트
+    // 피버 게이지 UI 업데이트 (기존 메서드 개선)
     private void UpdateFeverGaugeUI()
     {
-        if (feverGaugeImage != null)
+        float normalizedValue = currentFeverGauge / feverGaugeMax;
+        
+        // 새로운 FeverUI 업데이트 (메인)
+        if (feverUI != null)
         {
-            feverGaugeImage.fillAmount = currentFeverGauge / feverGaugeMax;
+            feverUI.OnFeverGaugeChanged(normalizedValue);
         }
         else
         {
-            Debug.LogWarning("feverGaugeImage 참조가 없습니다!");
+            // FeverUI가 없으면 다시 찾기 시도
+            feverUI = FindFeverUIComponent();
+            if (feverUI != null)
+            {
+                feverUI.OnFeverGaugeChanged(normalizedValue);
+            }
+        }
+        
+        // 디버그 로그 (개발 중에만)
+        if (Application.isEditor && normalizedValue > 0)
+        {
+            Debug.Log($"피버 게이지 UI 업데이트: {normalizedValue:P1} ({currentFeverGauge:F2}/{feverGaugeMax:F2})");
         }
     }
     
     // 미니게임 성공 보상 처리
     private void HandleMiniGameSuccess(MiniGameType gameType)
     {
-        // 현재 상호작용 중인 NPC를 가져옴
         NPCController npc = GetCurrentInteractingNPC();
         
         if (npc != null)
         {
             Debug.Log($"미니게임 성공 보상: {npc.GetName()} NPC 감정 상태 변경 및 유령 모드 설정");
             
-            // NPC 감정 상태 업데이트
             NPCEmotionController emotionController = npc.GetComponent<NPCEmotionController>();
             if (emotionController != null)
             {
                 emotionController.ChangeEmotionState(EmotionState.Happy);
             }
             
-            // NPC를 유령 모드로 설정 (자동으로 FollowerManager에 등록됨)
             npc.SetSeduced();
             npc.SetGhostMode(true);
-            
-            // 점수는 FollowerManager에서 자동으로 처리됨
         }
         else
         {
@@ -383,7 +401,6 @@ public class MiniGameManager : MonoBehaviour
     // 현재 상호작용 중인 NPC 가져오기
     private NPCController GetCurrentInteractingNPC()
     {
-        // NPCInteractionManager에서 현재 상호작용 중인 NPC 가져오기
         NPCInteractionManager interactionManager = FindAnyObjectByType<NPCInteractionManager>();
         if (interactionManager != null)
         {
@@ -411,21 +428,18 @@ public class MiniGameManager : MonoBehaviour
         return ZeeeingGaze.FollowerManager.Instance != null && ZeeeingGaze.FollowerManager.Instance.IsNPCFollowing(npc);
     }
 
-    // NPC를 따라오게 만드는 처리 (public으로 변경)
+    // NPC를 따라오게 만드는 처리
     public void MakeNPCFollow(NPCController npc)
     {
         if (npc == null) return;
         
-        // NPC 컴포넌트 확인
         if (!npc.gameObject.activeInHierarchy) return;
         
         Debug.Log($"{npc.GetName()} NPC를 따라오게 설정");
         
-        // NPC를 유령 모드로 설정 (자동으로 FollowerManager에 등록됨)
         npc.SetSeduced();
         npc.SetGhostMode(true);
         
-        // 점수 추가
         AddScore(npc.GetPointValue());
     }
     
@@ -442,10 +456,9 @@ public class MiniGameManager : MonoBehaviour
         UpdateScoreUI();
     }
     
-    // 미니게임 시작 메서드 (외부에서 호출)
+    // 미니게임 시작 메서드
     public bool StartMiniGame(MiniGameType gameType, int difficulty = 1)
     {
-        // 이미 진행 중인 미니게임이 있으면 시작 거부
         if (currentMiniGame != ActiveMiniGame.None)
         {
             Debug.LogWarning("이미 진행 중인 미니게임이 있습니다!");
@@ -483,29 +496,13 @@ public class MiniGameManager : MonoBehaviour
                     Debug.LogError("heartGazeGame 참조가 null입니다!");
                 }
                 break;
-                
-            case MiniGameType.NPCChase:
-                if (chaseGame != null)
-                {
-                    Debug.Log($"ChaseGame 시작 (난이도: {difficulty})");
-                    chaseGame.StartMiniGame(difficulty);
-                    currentMiniGame = ActiveMiniGame.NPCChase;
-                    started = true;
-                }
-                else
-                {
-                    Debug.LogError("chaseGame 참조가 null입니다!");
-                }
-                break;
         }
         
-        // 이벤트 발생
         if (started)
         {
             Debug.Log($"미니게임 시작 이벤트 발생: {gameType}");
             OnGameStarted?.Invoke(gameType);
             
-            // MiniGameUI 직접 참조 시도
             MiniGameUI ui = FindAnyObjectByType<MiniGameUI>();
             if (ui != null)
             {
@@ -544,14 +541,6 @@ public class MiniGameManager : MonoBehaviour
                 }
                 break;
                 
-            case ActiveMiniGame.NPCChase:
-                if (chaseGame != null)
-                {
-                    chaseGame.StopGame();
-                    Debug.Log("ChaseGame 중지됨");
-                }
-                break;
-                
             case ActiveMiniGame.None:
                 Debug.Log("현재 실행 중인 미니게임이 없습니다");
                 break;
@@ -570,32 +559,25 @@ public class MiniGameManager : MonoBehaviour
     public enum MiniGameType
     {
         ColorGaze,
-        HeartGaze,
-        NPCChase
+        HeartGaze
     }
 
     public void ForceCleanupAllUI()
     {
         Debug.Log("모든 미니게임 UI 강제 정리");
         
-        // MiniGameUI 찾기
         MiniGameUI ui = FindAnyObjectByType<MiniGameUI>();
         if (ui != null)
         {
             ui.HideAllPanels();
         }
         
-        // 각 미니게임의 public 메서드 호출
         if (colorGazeGame != null)
             colorGazeGame.HideGameUI();
             
         if (heartGazeGame != null)
             heartGazeGame.HideGameUI();
             
-        if (chaseGame != null)
-            chaseGame.HideGameUI();
-            
-        // UI 상태 로깅
         LogGameUIStates();
     }
 
@@ -605,14 +587,33 @@ public class MiniGameManager : MonoBehaviour
         Debug.Log($"미니게임 UI 상태: " +
                 $"ColorGame UI: {(colorGazeGame != null ? colorGazeGame.IsGameUIActive() : "null")}, " +
                 $"HeartGame UI: {(heartGazeGame != null ? heartGazeGame.IsGameUIActive() : "null")}, " +
-                $"ChaseGame UI: {(chaseGame != null ? chaseGame.IsGameUIActive() : "null")}");
+                $"FeverUI: {(feverUI != null ? "활성" : "null")}");
     }
         
-    // (선택적) 피버 모드 수동 활성화 (테스트용)
+    // 디버그용 피버 모드 수동 활성화 (수정된 버전)
+    [ContextMenu("Debug: Activate Fever Mode")]
     public void DebugActivateFeverMode()
     {
-        Debug.Log("피버 모드 수동 활성화 요청");
+        Debug.Log("🔥 피버 모드 수동 활성화 요청");
+        currentFeverGauge = feverGaugeMax;
         ActivateFeverMode();
+    }
+    
+    // 디버그용 피버 게이지 설정
+    [ContextMenu("Debug: Set Fever Gauge 50%")]
+    public void DebugSetFeverGauge50()
+    {
+        currentFeverGauge = feverGaugeMax * 0.5f;
+        UpdateFeverGaugeUI();
+        Debug.Log("피버 게이지를 50%로 설정");
+    }
+    
+    [ContextMenu("Debug: Set Fever Gauge 90%")]
+    public void DebugSetFeverGauge90()
+    {
+        currentFeverGauge = feverGaugeMax * 0.9f;
+        UpdateFeverGaugeUI();
+        Debug.Log("피버 게이지를 90%로 설정");
     }
     
     // 사용 중인 리소스 정리
@@ -629,11 +630,6 @@ public class MiniGameManager : MonoBehaviour
         if (heartGazeGame != null)
         {
             heartGazeGame.OnGameCompleted -= OnHeartGameCompleted;
-        }
-        
-        if (chaseGame != null)
-        {
-            chaseGame.OnGameCompleted -= OnChaseGameCompleted;
         }
         
         // MiniGameUI 이벤트 구독 해제

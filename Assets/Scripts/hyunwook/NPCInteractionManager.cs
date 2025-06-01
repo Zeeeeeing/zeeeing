@@ -6,17 +6,27 @@ using ZeeeingGaze;
 public class NPCInteractionManager : MonoBehaviour
 {
     [SerializeField] private MiniGameManager miniGameManager;
-    [SerializeField] private float minInteractionTime = 3.0f; // 미니게임 시작 전 최소 상호작용 시간
-    [SerializeField] private float interactionDistance = 5.0f; // NPC와의 최대 상호작용 거리
+    [SerializeField] private float minInteractionTime = 2.0f; // 감소 (3.0 -> 2.0)
+    [SerializeField] private float interactionDistance = 4.0f; // 감소 (5.0 -> 4.0, 더 가까이)
+    
+    [Header("Distance-based UI Settings")]
+    [SerializeField] private float uiShowDistance = 6.0f; // UI 표시 거리 (가까울 때도 표시)
+    [SerializeField] private float uiHideDistance = 0.3f; // UI 숨김 거리 (너무 가까우면 숨김)
+    [SerializeField] private bool showUIAtAllDistances = true; // 모든 거리에서 UI 표시
     
     [Header("Player References")]
-    [SerializeField] private PlayerEmotionController playerEmotionController; // 플레이어 감정 컨트롤러 참조 추가
+    [SerializeField] private PlayerEmotionController playerEmotionController;
     
     [Header("Elite NPC Settings")]
-    [SerializeField] private List<NPCController> eliteNPCs; // 미니게임이 필요한 특별 NPC
+    [SerializeField] private List<NPCController> eliteNPCs;
+    
+    [Header("Fast Tempo Settings")]
+    [SerializeField] private float fastEmotionBuildupMultiplier = 2.0f; // 감정 쌓이는 속도 2배
+    [SerializeField] private float regularNPCSuccessTime = 3.0f; // 감소 (기존 6.0 -> 3.0)
+    [SerializeField] private float matchingEmotionBonus = 1.5f; // 감정 일치시 보너스
     
     [Header("Debug Settings")]
-    [SerializeField] private bool enableDebugLogs = false; // 디버그 로그 활성화 옵션
+    [SerializeField] private bool enableDebugLogs = false;
     
     // 현재 상호작용 중인 NPC
     private NPCController currentInteractingNPC;
@@ -40,7 +50,7 @@ public class NPCInteractionManager : MonoBehaviour
             }
         }
         
-        Debug.Log("NPCInteractionManager 초기화 완료");
+        Debug.Log("NPCInteractionManager 초기화 완료 (빠른 템포 모드)");
     }
     
     private void Update()
@@ -74,7 +84,6 @@ public class NPCInteractionManager : MonoBehaviour
         NPCController nearest = null;
         float minDistance = interactionDistance;
         
-        // FindObjectsOfType 대신 FindObjectsByType 사용
         NPCController[] allNPCs = Object.FindObjectsByType<NPCController>(FindObjectsSortMode.None);
         
         if (enableDebugLogs)
@@ -99,22 +108,18 @@ public class NPCInteractionManager : MonoBehaviour
             Vector3 npcPosXZ = new Vector3(npc.transform.position.x, 0, npc.transform.position.z);
             float distanceXZ = Vector3.Distance(playerPosXZ, npcPosXZ);
             
-            // 일반 거리 계산 (높이 포함)
-            float distance = Vector3.Distance(playerTransform.position, npc.transform.position);
-            
             // 시선 방향 체크 (플레이어가 NPC를 바라보고 있는지)
             Vector3 directionToNPC = (npc.transform.position - playerTransform.position).normalized;
             float dotProduct = Vector3.Dot(playerTransform.forward, directionToNPC);
-            float angleToDegrees = Mathf.Acos(Mathf.Clamp(dotProduct, -1.0f, 1.0f)) * Mathf.Rad2Deg;
             
             if (enableDebugLogs)
             {
-                Debug.Log($"NPC: {npc.GetName()}, 거리: {distance:F2}m, XZ거리: {distanceXZ:F2}m, 각도: {angleToDegrees:F1}°, 도트곱: {dotProduct:F2}");
+                Debug.Log($"NPC: {npc.GetName()}, XZ거리: {distanceXZ:F2}m, 도트곱: {dotProduct:F2}");
             }
             
-            // 거리가 가깝고, 플레이어가 NPC를 바라보고 있으면
-            // 0.5는 약 60도 이내 (0.7은 약 45도 이내)
-            if (distanceXZ < minDistance && dotProduct > 0.5f)
+            // 거리가 가깝고, 플레이어가 NPC를 바라보고 있으면 (더 관대한 각도)
+            // 0.2은 약 78도 이내 (기존 0.3에서 더 완화)
+            if (distanceXZ < minDistance && dotProduct > 0.2f)
             {
                 nearest = npc;
                 minDistance = distanceXZ;
@@ -124,11 +129,6 @@ public class NPCInteractionManager : MonoBehaviour
                     Debug.Log($"상호작용 가능한 NPC 발견: {npc.GetName()}, 거리: {distanceXZ:F2}m");
                 }
             }
-        }
-        
-        if (enableDebugLogs && nearest == null)
-        {
-            Debug.Log("상호작용 가능한 NPC가 없습니다.");
         }
         
         return nearest;
@@ -150,7 +150,7 @@ public class NPCInteractionManager : MonoBehaviour
         // NPC 하이라이트 표시 등의 처리
         HighlightNPC(npc, true);
         
-        Debug.Log($"NPC {npc.GetName()}와(과) 상호작용 시작");
+        Debug.Log($"NPC {npc.GetName()}와(과) 상호작용 시작 (빠른 템포 모드)");
     }
     
     // 현재 상호작용 지속
@@ -158,11 +158,11 @@ public class NPCInteractionManager : MonoBehaviour
     {
         if (!isInteracting || currentInteractingNPC == null) return;
         
-        // 상호작용 시간 증가
-        currentInteractionTime += Time.deltaTime;
+        // 상호작용 시간 증가 (빠른 템포용 배율 적용)
+        currentInteractionTime += Time.deltaTime * fastEmotionBuildupMultiplier;
         
-        // 플레이어의 현재 감정 상태 가져오기 (PlayerEmotionController 활용)
-        EmotionState playerEmotion = EmotionState.Neutral; // 기본값
+        // 플레이어의 현재 감정 상태 가져오기
+        EmotionState playerEmotion = EmotionState.Neutral;
         if (playerEmotionController != null)
         {
             playerEmotion = playerEmotionController.GetCurrentEmotion();
@@ -172,39 +172,40 @@ public class NPCInteractionManager : MonoBehaviour
         NPCEmotionController emotionController = currentInteractingNPC.GetComponent<NPCEmotionController>();
         if (emotionController != null)
         {
-            // 플레이어 감정에 따라 NPC 반응 트리거
+            // 플레이어 감정에 따라 NPC 반응 트리거 (강화된 반응)
             ReactToPlayerEmotion(emotionController, playerEmotion);
         }
         
         // 상호작용 진행률 표시 업데이트 등
         UpdateInteractionProgress();
         
-        // 일정 시간 이상 상호작용했고, NPC가 미니게임을 필요로 하는 경우 미니게임 시작
+        // Elite NPC 미니게임 조건 확인 (더 빠른 트리거)
         if (currentInteractionTime >= minInteractionTime && IsEliteNPC(currentInteractingNPC))
         {
-            // 특정 조건이 만족되면 미니게임 시작
             if (ShouldTriggerMiniGame(currentInteractingNPC))
             {
                 TriggerMiniGame(currentInteractingNPC);
             }
         }
-        // 일반 NPC의 경우 일정 시간 이상 상호작용하면 '꼬시기' 성공
-        else if (currentInteractionTime >= minInteractionTime * 2 && !IsEliteNPC(currentInteractingNPC))
+        // 일반 NPC 꼬시기 성공 조건 (더 빠른 성공)
+        else if (!IsEliteNPC(currentInteractingNPC))
         {
-            // 플레이어 감정이 NPC의 현재 감정과 일치하면 더 빠르게 꼬시기 성공
+            float requiredTime = regularNPCSuccessTime;
+            
+            // 플레이어 감정이 NPC 감정과 일치하면 더 빠르게
             if (emotionController != null && playerEmotion == emotionController.GetCurrentEmotion())
             {
-                HandleRegularNPCSuccess();
+                requiredTime *= (1.0f / matchingEmotionBonus); // 1.5배 빠르게
             }
-            // 그렇지 않으면 기본 로직대로 처리
-            else if (currentInteractionTime >= minInteractionTime * 3) // 더 오래 걸림
+            
+            if (currentInteractionTime >= requiredTime)
             {
                 HandleRegularNPCSuccess();
             }
         }
     }
     
-    // 플레이어 감정에 따른 NPC 반응 처리
+    // 플레이어 감정에 따른 NPC 반응 처리 (강화된 반응)
     private void ReactToPlayerEmotion(NPCEmotionController npcEmotionController, EmotionState playerEmotion)
     {
         if (npcEmotionController == null) return;
@@ -213,50 +214,43 @@ public class NPCInteractionManager : MonoBehaviour
         EmotionState npcEmotion = npcEmotionController.GetCurrentEmotion();
         float npcEmotionIntensity = npcEmotionController.GetCurrentEmotionIntensity();
         
-        // NPC 타입이나 성격에 따라 다른 반응 로직 적용 가능
-        NPCController npcController = npcEmotionController.GetComponent<NPCController>();
+        // 빠른 템포를 위한 감정 변화 배율
+        float emotionChangeRate = fastEmotionBuildupMultiplier * Time.deltaTime;
         
-        // 플레이어 감정에 따른 NPC 반응 로직
+        // 플레이어 감정에 따른 NPC 반응 로직 (강화됨)
         switch (playerEmotion)
         {
             case EmotionState.Happy:
-                // 행복한 플레이어에 대한 NPC 반응
                 if (npcEmotion == EmotionState.Neutral || npcEmotion == EmotionState.Sad)
                 {
-                    // 중립이나 슬픈 NPC는 행복한 플레이어에 점차 영향받음
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.02f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.04f * emotionChangeRate);
                     
-                    // 감정 강도가 충분히 높아지면 감정 변경
-                    if (npcEmotionIntensity > 0.8f && npcEmotion != EmotionState.Happy)
+                    if (npcEmotionIntensity > 0.6f && npcEmotion != EmotionState.Happy) // 임계값 낮춤
                     {
                         npcEmotionController.ChangeEmotionState(EmotionState.Happy);
                     }
                 }
                 else if (npcEmotion == EmotionState.Angry)
                 {
-                    // 화난 NPC는 행복한 플레이어에 냉담하게 반응
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.01f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.02f * emotionChangeRate);
                 }
                 break;
                 
             case EmotionState.Sad:
-                // 슬픈 플레이어에 대한 NPC 반응
                 if (npcEmotion == EmotionState.Happy)
                 {
-                    // 행복한 NPC는 슬픈 플레이어에 의해 감정이 누그러짐
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.01f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.02f * emotionChangeRate);
                     
-                    if (npcEmotionIntensity < 0.2f)
+                    if (npcEmotionIntensity < 0.3f) // 임계값 높임
                     {
                         npcEmotionController.ChangeEmotionState(EmotionState.Neutral);
                     }
                 }
                 else if (npcEmotion == EmotionState.Neutral)
                 {
-                    // 중립 NPC는 슬픈 플레이어에 영향받아 점차 슬퍼짐
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.02f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.03f * emotionChangeRate);
                     
-                    if (npcEmotionIntensity > 0.7f)
+                    if (npcEmotionIntensity > 0.5f) // 임계값 낮춤
                     {
                         npcEmotionController.ChangeEmotionState(EmotionState.Sad);
                     }
@@ -264,35 +258,31 @@ public class NPCInteractionManager : MonoBehaviour
                 break;
                 
             case EmotionState.Angry:
-                // 화난 플레이어에 대한 NPC 반응
                 if (npcEmotion == EmotionState.Happy || npcEmotion == EmotionState.Neutral)
                 {
-                    // 행복하거나 중립 NPC는 화난 플레이어에 위축됨
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.02f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.03f * emotionChangeRate);
                     
-                    if (npcEmotionIntensity < 0.3f && npcEmotion == EmotionState.Happy)
+                    if (npcEmotionIntensity < 0.4f && npcEmotion == EmotionState.Happy) // 임계값 높임
                     {
                         npcEmotionController.ChangeEmotionState(EmotionState.Neutral);
                     }
                 }
                 else if (npcEmotion == EmotionState.Angry)
                 {
-                    // 화난 NPC는 화난 플레이어에 더 화가 남
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.03f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.05f * emotionChangeRate);
                 }
                 break;
                 
             case EmotionState.Neutral:
             default:
-                // 중립 플레이어에 대한 NPC 반응은 미미함
-                // NPC는 자신의 감정 상태를 천천히 원래대로 되돌림
+                // 중립 플레이어에 대한 NPC 반응 (더 빠른 수렴)
                 if (npcEmotionIntensity > 0.5f)
                 {
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.01f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity - 0.02f * emotionChangeRate);
                 }
                 else if (npcEmotionIntensity < 0.5f)
                 {
-                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.01f);
+                    npcEmotionController.SetEmotionIntensity(npcEmotionIntensity + 0.02f * emotionChangeRate);
                 }
                 break;
         }
@@ -303,7 +293,6 @@ public class NPCInteractionManager : MonoBehaviour
     {
         if (currentInteractingNPC != null)
         {
-            // NPC 하이라이트 제거
             HighlightNPC(currentInteractingNPC, false);
             Debug.Log($"NPC {currentInteractingNPC.GetName()}와(과)의 상호작용 종료");
         }
@@ -333,25 +322,24 @@ public class NPCInteractionManager : MonoBehaviour
         return eliteNPCs.Contains(npc) || npc.IsEliteNPC();
     }
     
-    // NPC가 이미 따라오고 있는지 확인 (FollowerManager 활용)
+    // NPC가 이미 따라오고 있는지 확인
     public bool IsNPCFollowing(NPCController npc)
     {
         return ZeeeingGaze.FollowerManager.Instance != null && ZeeeingGaze.FollowerManager.Instance.IsNPCFollowing(npc);
     }
     
-    // 미니게임을 트리거해야 하는지 확인
+    // 미니게임을 트리거해야 하는지 확인 (더 낮은 임계값)
     private bool ShouldTriggerMiniGame(NPCController npc)
     {
-        // NPC의 감정 상태 확인
         NPCEmotionController emotionController = npc.GetComponent<NPCEmotionController>();
         if (emotionController != null)
         {
-            // 감정 강도가 특정 임계값을 넘었는지 확인
-            bool intensityCheck = emotionController.GetCurrentEmotionIntensity() >= 0.7f;
+            // 감정 강도 임계값 낮춤 (0.7 -> 0.5)
+            bool intensityCheck = emotionController.GetCurrentEmotionIntensity() >= 0.5f;
             
             if (enableDebugLogs)
             {
-                Debug.Log($"미니게임 트리거 조건 확인: NPC={npc.GetName()}, 감정강도={emotionController.GetCurrentEmotionIntensity():F2}, 임계값=0.7, 만족={intensityCheck}");
+                Debug.Log($"미니게임 트리거 조건 확인: NPC={npc.GetName()}, 감정강도={emotionController.GetCurrentEmotionIntensity():F2}, 임계값=0.5, 만족={intensityCheck}");
             }
             
             return intensityCheck;
@@ -363,7 +351,6 @@ public class NPCInteractionManager : MonoBehaviour
     // 미니게임 트리거
     private void TriggerMiniGame(NPCController npc)
     {
-        // miniGameManager 참조 확인
         if (miniGameManager == null)
         {
             miniGameManager = FindAnyObjectByType<MiniGameManager>();
@@ -377,21 +364,19 @@ public class NPCInteractionManager : MonoBehaviour
         // NPC 타입에 따른 미니게임 선택
         MiniGameManager.MiniGameType gameType = DetermineGameType(npc);
         
-        // 난이도 결정 (NPC 속성에 따라 다르게 설정 가능)
-        int difficulty = DetermineDifficulty(npc);
+        // 난이도 결정 (더 쉽게 조정)
+        int difficulty = Mathf.Max(0, DetermineDifficulty(npc) - 1); // 난이도 1단계 낮춤
         
-        Debug.Log($"미니게임 시작: 타입={gameType}, 난이도={difficulty}, NPC={npc.GetName()}");
+        Debug.Log($"미니게임 시작: 타입={gameType}, 난이도={difficulty}, NPC={npc.GetName()} (빠른 템포 모드)");
         
         // 미니게임 시작
         bool started = miniGameManager.StartMiniGame(gameType, difficulty);
         
         if (started)
         {
-            // 상호작용 일시 중지 (미니게임 진행 중에는 다른 NPC와 상호작용 불가)
             isInteracting = false;
             Debug.Log("미니게임이 성공적으로 시작됨");
             
-            // 추가: UI가 표시되지 않은 경우를 대비해 직접 호출
             MiniGameUI ui = FindAnyObjectByType<MiniGameUI>();
             if (ui != null)
             {
@@ -407,16 +392,15 @@ public class NPCInteractionManager : MonoBehaviour
     // NPC 타입에 따른 미니게임 타입 결정
     private MiniGameManager.MiniGameType DetermineGameType(NPCController npc)
     {
-        // NPC가 랜덤 미니게임을 사용한다면 랜덤 선택
         if (npc.UseRandomMiniGame())
         {
-            int randomType = UnityEngine.Random.Range(0, 3);
+            // 2개 게임 중 랜덤 선택
+            int randomType = UnityEngine.Random.Range(0, 2);
             MiniGameManager.MiniGameType randomGameType = (MiniGameManager.MiniGameType)randomType;
             Debug.Log($"랜덤 미니게임 선택: {randomGameType}");
             return randomGameType;
         }
         
-        // NPC의 선호 미니게임 타입 반환
         MiniGameManager.MiniGameType gameType = npc.GetPreferredMiniGameType();
         Debug.Log($"NPC 선호 미니게임 선택: {gameType}");
         return gameType;
@@ -425,7 +409,6 @@ public class NPCInteractionManager : MonoBehaviour
     // NPC 타입에 따른 난이도 결정
     private int DetermineDifficulty(NPCController npc)
     {
-        // NPC에 설정된 미니게임 난이도 반환
         return npc.GetMiniGameDifficulty();
     }
     
@@ -434,7 +417,7 @@ public class NPCInteractionManager : MonoBehaviour
     {
         if (currentInteractingNPC == null) return;
         
-        Debug.Log($"일반 NPC {currentInteractingNPC.GetName()} 꼬시기 성공!");
+        Debug.Log($"일반 NPC {currentInteractingNPC.GetName()} 꼬시기 성공! (빠른 템포 모드)");
         
         // 감정 상태 행복으로 변경
         NPCEmotionController emotionController = currentInteractingNPC.GetComponent<NPCEmotionController>();
@@ -461,6 +444,29 @@ public class NPCInteractionManager : MonoBehaviour
     public void SetDebugLogging(bool enable)
     {
         enableDebugLogs = enable;
-        Debug.Log($"NPCInteractionManager 디버그 로그 {(enable ? "활성화" : "비활성화")}");
+        Debug.Log($"NPCInteractionManager 디버그 로그 {(enable ? "활성화" : "비활성화")} (빠른 템포 모드)");
     }
+    
+    // UI 거리 설정 메서드들
+    public void SetUIDistanceSettings(float showDistance, float hideDistance, bool showAtAllDistances)
+    {
+        uiShowDistance = Mathf.Max(0.1f, showDistance);
+        uiHideDistance = Mathf.Max(0.1f, hideDistance);
+        showUIAtAllDistances = showAtAllDistances;
+        
+        Debug.Log($"UI 거리 설정 업데이트 - 표시: {uiShowDistance}m, 숨김: {uiHideDistance}m, 항상 표시: {showUIAtAllDistances}");
+    }
+    
+    public float GetUIShowDistance() => uiShowDistance;
+    public float GetUIHideDistance() => uiHideDistance;
+    public bool GetShowUIAtAllDistances() => showUIAtAllDistances;
+    
+    // 상호작용 거리 설정
+    public void SetInteractionDistance(float distance)
+    {
+        interactionDistance = Mathf.Max(0.5f, distance);
+        Debug.Log($"상호작용 거리 설정: {interactionDistance}m");
+    }
+    
+    public float GetInteractionDistance() => interactionDistance;
 }
