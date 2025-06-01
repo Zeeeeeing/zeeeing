@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "VRgit.sln"
+    "dotnet.defaultSolution": "zeeeing.sln"
 }
