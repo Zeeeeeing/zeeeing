@@ -15,14 +15,14 @@
       "hash": "45d88649a95e3373945a4b253cd329407d7e33d3"
     },
     "com.meta.xr.sdk.core": {
-      "version": "74.0.0",
+      "version": "76.0.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.interaction": {
-      "version": "74.0.0",
+      "version": "76.0.1",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -32,12 +32,12 @@
       "url": "https://packages.unity.com"
     },
     "com.meta.xr.sdk.interaction.ovr": {
-      "version": "74.0.1",
+      "version": "76.0.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.meta.xr.sdk.core": "74.0.0",
-        "com.meta.xr.sdk.interaction": "74.0.0"
+        "com.meta.xr.sdk.core": "76.0.1",
+        "com.meta.xr.sdk.interaction": "76.0.1"
       },
       "url": "https://packages.unity.com"
     },

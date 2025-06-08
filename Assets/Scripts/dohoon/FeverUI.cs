@@ -303,7 +303,7 @@ public class FeverUI : MonoBehaviour
         
         if (feverModeText != null)
         {
-            feverModeText.text = $"FEVER!\n{Mathf.CeilToInt(remainingTime)}초";
+            feverModeText.text = $"{Mathf.CeilToInt(remainingTime)}초";
         }
         
         // 타이머에 따른 게이지 업데이트
