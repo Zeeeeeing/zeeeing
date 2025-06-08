@@ -7,7 +7,7 @@ namespace ZeeeingGaze
     {
         [Header("Components")]
         [SerializeField] private NPCEmotionController emotionController;
-        [SerializeField] private NavMeshAgent navMeshAgent;
+        [SerializeField] private NavMeshObstacle navMeshObstacle;
         [SerializeField] private Animator animator;
         
         [Header("NPC Data")]
@@ -36,8 +36,8 @@ namespace ZeeeingGaze
             if (emotionController == null)
                 emotionController = GetComponent<NPCEmotionController>();
                 
-            if (navMeshAgent == null)
-                navMeshAgent = GetComponent<NavMeshAgent>();
+            if (navMeshObstacle == null)
+                navMeshObstacle = GetComponent<NavMeshObstacle>();
                 
             if (animator == null)
                 animator = GetComponent<Animator>();
@@ -144,7 +144,7 @@ namespace ZeeeingGaze
                 isGhost = enabled;
                 
                 // NavMesh 및 물리 컴포넌트 제어
-                if (navMeshAgent != null) navMeshAgent.enabled = !enabled;
+                if (navMeshObstacle != null) navMeshObstacle.enabled = !enabled;
                 
                 AutonomousDriver driver = GetComponent<AutonomousDriver>();
                 if (driver != null) driver.enabled = !enabled;
