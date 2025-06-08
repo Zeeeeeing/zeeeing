@@ -78,21 +78,19 @@ public class EndingUIController : MonoBehaviour
     
     private IEnumerator ShowEndingAnimation()
     {
-        // 페이드 인
-        yield return StartCoroutine(FadeIn());
-        
-        // 최종 데이터 수집
+        // ⭐ 수정: 페이드인 전에 먼저 데이터 수집하고 UI 설정
         GameStats stats = CollectGameStats();
         
-        // 모든 UI를 즉시 최종 값으로 표시
+        // 모든 UI를 즉시 최종 값으로 설정 (페이드인 전에)
         ShowScoreInstant(stats.finalScore);
         ShowNPCCountInstant(stats.npcCount);
         ShowCompletionRateInstant(stats.completionRate);
         ShowGradeInstant(stats.grade);
         ShowEmotionStatsInstant(stats.emotionStats, stats.mostUsedEmotion);
-        
-        // 감사 메시지 표시
         ShowThankYouMessage();
+        
+        // 이제 페이드 인 (이미 올바른 데이터가 설정된 상태로)
+        yield return StartCoroutine(FadeIn());
         
         // 버튼 활성화
         EnableButtons();
@@ -102,7 +100,7 @@ public class EndingUIController : MonoBehaviour
     private void ShowScoreInstant(int score)
     {
         if (finalScoreText != null)
-            finalScoreText.text = $"<color=#FFD700>최종 점수</color> <size=60>{score:N0}</size>";
+            finalScoreText.text = $"<color=#FFD700>최종 점수</color>\n<size=60>{score:N0}</size>";
     }
     
     private void ShowNPCCountInstant(int count)
@@ -153,11 +151,11 @@ public class EndingUIController : MonoBehaviour
             Color emotionColor = kvp.Key.GetEmotionColor();
             string colorHex = ColorUtility.ToHtmlStringRGB(emotionColor);
             
-            string highlight = kvp.Key == mostUsed ? " !!!" : "";
+            string highlight = kvp.Key == mostUsed ? " !!" : "";
             statsText += $"<color=#{colorHex}>{kvp.Key.GetEmotionName()}</color>: {kvp.Value}회{highlight}\n";
         }
         
-        statsText += $"\n<color=#90EE90>가장 선호하는 감정: {mostUsed.GetEmotionName()}</color>";
+        statsText += $"<color=#90EE90>가장 선호하는 감정: \n{mostUsed.GetEmotionName()}</color>";
         
         emotionStatsText.text = statsText;
     }
@@ -235,8 +233,7 @@ public class EndingUIController : MonoBehaviour
         if (thankYouText == null) return;
         
         thankYouText.text = 
-            "<color=#FFB6C1>데모를 플레이해주셔서 감사합니다!</color>\n\n" +
-            "<size=18>눈빛 보내기 VR의 정식 버전을 기대해주세요!</size>";
+            "<color=#FFB6C1>데모를 플레이\n해주셔서 감사합니다!</color>";
     }
     
     private void EnableButtons()

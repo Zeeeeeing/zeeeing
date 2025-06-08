@@ -298,12 +298,12 @@ public class MiniGameUI : MonoBehaviour
                 {
                     if (success)
                     {
-                        resultText.text = $"성공!\n점수: {score}";
+                        resultText.text = $"성공! 점수: {score}";
                         resultText.color = Color.green;
                     }
                     else
                     {
-                        resultText.text = $"실패!\n점수: {score}";
+                        resultText.text = $"실패! 점수: {score}";
                         resultText.color = Color.red;
                     }
                 }
