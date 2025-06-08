@@ -15,6 +15,7 @@ public class GameStartManager : MonoBehaviour
 
     [Header("Game Controllers")]
     [SerializeField] private HUDController hudController;
+    [SerializeField] private GameFlowManager gameFlowManager; // GameFlowManager 참조 추가
 
     [Header("Player References")]
     [SerializeField] private Transform playerRig; // VR 리그 직접 참조 (중요!)
@@ -26,6 +27,17 @@ public class GameStartManager : MonoBehaviour
 
     private void Awake()
     {
+        // GameFlowManager 자동 찾기
+        if (gameFlowManager == null)
+            gameFlowManager = FindAnyObjectByType<GameFlowManager>();
+
+        // GameFlowManager 초기 비활성화
+        if (gameFlowManager != null)
+        {
+            gameFlowManager.gameObject.SetActive(false);
+            Debug.Log("GameFlowManager 초기 비활성화");
+        }
+
         // Awake에서 플레이어 위치 설정 - 씬 로드 직후 즉시 이동
         SetPlayerToStartPosition();
     }
@@ -150,6 +162,17 @@ public class GameStartManager : MonoBehaviour
             startMenuCanvas.SetActive(false);
         }
 
+        // GameFlowManager 활성화
+        if (gameFlowManager != null)
+        {
+            gameFlowManager.gameObject.SetActive(true);
+            Debug.Log("GameFlowManager 활성화됨 - 튜토리얼 시작");
+        }
+        else
+        {
+            Debug.LogError("GameFlowManager가 할당되지 않았습니다!");
+        }
+
         // 게임 시작 로직
         StartGame();
     }
@@ -246,27 +269,8 @@ public class GameStartManager : MonoBehaviour
             Debug.LogError("[GSM] gameCanvas가 null입니다!");
         }
 
-        // HUD 컨트롤러의 타이머 시작
-        if (hudController != null)
-        {
-            Debug.Log("[GSM] hudController 참조 확인됨, StartTimer() 호출 시도");
-            hudController.StartTimer();
-
-            // 타이머 시작 확인
-            bool isRunning = hudController.IsTimerRunning();
-            Debug.Log("[GSM] HUD 타이머 시작 시도 완료, 타이머 실행 상태: " + isRunning);
-
-            // 타이머가 시작되지 않았다면 강제 시작 시도
-            if (!isRunning)
-            {
-                Debug.LogWarning("[GSM] 타이머가 시작되지 않았습니다. 강제 시작 시도");
-                hudController.ForceStartTimer();
-            }
-        }
-        else
-        {
-            Debug.LogError("[GSM] hudController가 할당되지 않았습니다! Inspector에서 확인하세요.");
-        }
+        // HUD 컨트롤러의 타이머는 GameFlowManager에서 관리되므로 여기서는 제거
+        // GameFlowManager가 튜토리얼 완료 후 자동으로 타이머를 시작할 것임
 
         Debug.Log("[GSM] 게임이 시작되었습니다!");
     }

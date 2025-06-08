@@ -412,7 +412,7 @@ public class NPCInteractionManager : MonoBehaviour
         return npc.GetMiniGameDifficulty();
     }
     
-    // 일반 NPC 꼬시기 성공 처리
+    // 일반 NPC 꼬시기 성공 처리 (수정된 버전)
     private void HandleRegularNPCSuccess()
     {
         if (currentInteractingNPC == null) return;
@@ -426,8 +426,8 @@ public class NPCInteractionManager : MonoBehaviour
             emotionController.ChangeEmotionState(EmotionState.Happy);
         }
         
-        // NPC를 유령 모드로 설정
-        currentInteractingNPC.SetSeduced();
+        // 일반 꼬시기로 NPC 설정 (꼬시기 점수만)
+        currentInteractingNPC.SetSeducedByRegularInteraction();
         currentInteractingNPC.SetGhostMode(true);
         
         // 상호작용 종료

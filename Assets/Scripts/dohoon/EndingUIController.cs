@@ -78,33 +78,86 @@ public class EndingUIController : MonoBehaviour
     
     private IEnumerator ShowEndingAnimation()
     {
-        // 페이드 인
-        yield return StartCoroutine(FadeIn());
-        
-        // 최종 데이터 수집
+        // ⭐ 수정: 페이드인 전에 먼저 데이터 수집하고 UI 설정
         GameStats stats = CollectGameStats();
         
-        // 각 텍스트를 순차적으로 애니메이션과 함께 표시
-        yield return StartCoroutine(AnimateScore(stats.finalScore));
-        yield return new WaitForSeconds(textAnimationDelay);
-        
-        yield return StartCoroutine(AnimateNPCCount(stats.npcCount));
-        yield return new WaitForSeconds(textAnimationDelay);
-        
-        yield return StartCoroutine(AnimateCompletionRate(stats.completionRate));
-        yield return new WaitForSeconds(textAnimationDelay);
-        
-        yield return StartCoroutine(ShowGrade(stats.grade));
-        yield return new WaitForSeconds(textAnimationDelay);
-        
-        yield return StartCoroutine(ShowEmotionStats(stats.emotionStats, stats.mostUsedEmotion));
-        yield return new WaitForSeconds(textAnimationDelay);
-        
-        // 감사 메시지 표시
+        // 모든 UI를 즉시 최종 값으로 설정 (페이드인 전에)
+        ShowScoreInstant(stats.finalScore);
+        ShowNPCCountInstant(stats.npcCount);
+        ShowCompletionRateInstant(stats.completionRate);
+        ShowGradeInstant(stats.grade);
+        ShowEmotionStatsInstant(stats.emotionStats, stats.mostUsedEmotion);
         ShowThankYouMessage();
+        
+        // 이제 페이드 인 (이미 올바른 데이터가 설정된 상태로)
+        yield return StartCoroutine(FadeIn());
         
         // 버튼 활성화
         EnableButtons();
+    }
+    
+    // 새로운 즉시 표시 메서드들
+    private void ShowScoreInstant(int score)
+    {
+        if (finalScoreText != null)
+            finalScoreText.text = $"<color=#FFD700>최종 점수</color>\n<size=60>{score:N0}</size>";
+    }
+    
+    private void ShowNPCCountInstant(int count)
+    {
+        if (npcCountText != null)
+            npcCountText.text = $"<color=#FF69B4>꼬셔진 NPC</color> <size=50>{count}명</size>";
+    }
+    
+    private void ShowCompletionRateInstant(float rate)
+    {
+        if (completionRateText != null)
+            completionRateText.text = $"<color=#00FFFF>완료율</color> <size=50>{rate:F1}%</size>";
+    }
+    
+    private void ShowGradeInstant(string grade)
+    {
+        if (gradeText != null)
+        {
+            Color gradeColor = GetGradeColor(grade);
+            gradeText.color = gradeColor;
+            gradeText.text = $"<size=80>{grade}</size> 등급";
+            
+            // 펄스 효과는 유지
+            StartCoroutine(GradePulseEffect());
+        }
+    }
+    
+    // 등급 펄스 효과 별도 메서드
+    private IEnumerator GradePulseEffect()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            gradeText.transform.localScale = Vector3.one * 1.2f;
+            yield return new WaitForSeconds(0.2f);
+            gradeText.transform.localScale = Vector3.one;
+            yield return new WaitForSeconds(0.2f);
+        }
+    }
+    
+    private void ShowEmotionStatsInstant(Dictionary<EmotionState, int> stats, EmotionState mostUsed)
+    {
+        if (emotionStatsText == null || stats == null) return;
+        
+        string statsText = "<color=#FFFF90>감정 사용 통계</color>\n\n";
+        
+        foreach (var kvp in stats)
+        {
+            Color emotionColor = kvp.Key.GetEmotionColor();
+            string colorHex = ColorUtility.ToHtmlStringRGB(emotionColor);
+            
+            string highlight = kvp.Key == mostUsed ? " !!" : "";
+            statsText += $"<color=#{colorHex}>{kvp.Key.GetEmotionName()}</color>: {kvp.Value}회{highlight}\n";
+        }
+        
+        statsText += $"<color=#90EE90>가장 선호하는 감정: \n{mostUsed.GetEmotionName()}</color>";
+        
+        emotionStatsText.text = statsText;
     }
     
     private GameStats CollectGameStats()
@@ -175,117 +228,12 @@ public class EndingUIController : MonoBehaviour
         canvasGroup.blocksRaycasts = true;
     }
     
-    private IEnumerator AnimateScore(int targetScore)
-    {
-        if (finalScoreText == null) yield break;
-        
-        float elapsed = 0f;
-        int currentScore = 0;
-        
-        while (elapsed < numberCountDuration)
-        {
-            elapsed += Time.deltaTime;
-            float progress = elapsed / numberCountDuration;
-            
-            currentScore = Mathf.RoundToInt(Mathf.Lerp(0, targetScore, progress));
-            finalScoreText.text = $"<color=#FFD700>최종 점수</color>\n<size=60>{currentScore:N0}</size>";
-            
-            yield return null;
-        }
-        
-        finalScoreText.text = $"<color=#FFD700>최종 점수</color>\n<size=60>{targetScore:N0}</size>";
-    }
-    
-    private IEnumerator AnimateNPCCount(int targetCount)
-    {
-        if (npcCountText == null) yield break;
-        
-        float elapsed = 0f;
-        int currentCount = 0;
-        
-        while (elapsed < numberCountDuration * 0.8f)
-        {
-            elapsed += Time.deltaTime;
-            float progress = elapsed / (numberCountDuration * 0.8f);
-            
-            currentCount = Mathf.RoundToInt(Mathf.Lerp(0, targetCount, progress));
-            npcCountText.text = $"<color=#FF69B4>꼬셔진 NPC</color>\n<size=50>{currentCount}명</size>";
-            
-            yield return null;
-        }
-        
-        npcCountText.text = $"<color=#FF69B4>꼬셔진 NPC</color>\n<size=50>{targetCount}명</size>";
-    }
-    
-    private IEnumerator AnimateCompletionRate(float targetRate)
-    {
-        if (completionRateText == null) yield break;
-        
-        float elapsed = 0f;
-        float currentRate = 0f;
-        
-        while (elapsed < numberCountDuration * 0.8f)
-        {
-            elapsed += Time.deltaTime;
-            float progress = elapsed / (numberCountDuration * 0.8f);
-            
-            currentRate = Mathf.Lerp(0, targetRate, progress);
-            completionRateText.text = $"<color=#00FFFF>완료율</color>\n<size=50>{currentRate:F1}%</size>";
-            
-            yield return null;
-        }
-        
-        completionRateText.text = $"<color=#00FFFF>완료율</color>\n<size=50>{targetRate:F1}%</size>";
-    }
-    
-    private IEnumerator ShowGrade(string grade)
-    {
-        if (gradeText == null) yield break;
-        
-        Color gradeColor = GetGradeColor(grade);
-        gradeText.color = gradeColor;
-        
-        // 등급 텍스트 펄스 효과
-        gradeText.text = $"<size=80>{grade}</size>\n등급";
-        
-        for (int i = 0; i < 3; i++)
-        {
-            gradeText.transform.localScale = Vector3.one * 1.2f;
-            yield return new WaitForSeconds(0.2f);
-            gradeText.transform.localScale = Vector3.one;
-            yield return new WaitForSeconds(0.2f);
-        }
-    }
-    
-    private IEnumerator ShowEmotionStats(Dictionary<EmotionState, int> stats, EmotionState mostUsed)
-    {
-        if (emotionStatsText == null || stats == null) yield break;
-        
-        string statsText = "<color=#FFFF90>감정 사용 통계</color>\n\n";
-        
-        foreach (var kvp in stats)
-        {
-            Color emotionColor = kvp.Key.GetEmotionColor();
-            string colorHex = ColorUtility.ToHtmlStringRGB(emotionColor);
-            
-            string highlight = kvp.Key == mostUsed ? " ⭐" : "";
-            statsText += $"<color=#{colorHex}>{kvp.Key.GetEmotionName()}</color>: {kvp.Value}회{highlight}\n";
-        }
-        
-        statsText += $"\n<color=#90EE90>가장 선호하는 감정: {mostUsed.GetEmotionName()}</color>";
-        
-        emotionStatsText.text = statsText;
-        
-        yield return new WaitForSeconds(0.5f);
-    }
-    
     private void ShowThankYouMessage()
     {
         if (thankYouText == null) return;
         
         thankYouText.text = 
-            "<color=#FFB6C1>데모를 플레이해주셔서 감사합니다!</color>\n\n" +
-            "<size=18>눈빛 보내기 VR의 정식 버전을 기대해주세요!</size>";
+            "<color=#FFB6C1>데모를 플레이\n해주셔서 감사합니다!</color>";
     }
     
     private void EnableButtons()

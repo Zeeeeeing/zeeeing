@@ -251,12 +251,12 @@ public class GameUIManager : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = $"점수: {score}";
+            scoreText.text = $"{score}";
         }
         
         if (npcCountText != null)
         {
-            npcCountText.text = $"꼬셔진 NPC: {npcCount}";
+            npcCountText.text = $"NPC COUNT: {npcCount}";
         }
     }
     
