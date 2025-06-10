@@ -613,7 +613,7 @@ namespace ZeeeingGaze
                 }
             }
         }
-        
+
         // 외부에서 호출 가능한 감정 상태 변경 메소드
         // NPCEmotionController.cs에서 ChangeEmotionState 메서드 수정
         public void ChangeEmotionState(EmotionState newEmotion)
@@ -625,72 +625,226 @@ namespace ZeeeingGaze
                 {
                     return;
                 }
-                
+
                 EmotionState previousEmotion = currentEmotion;
                 currentEmotion = newEmotion;
-                
+
                 // 시퀀스 처리 중이 아니라면 감정 강도 리셋
                 if (!isProcessingSequence)
                 {
                     currentEmotionIntensity = 0f;
                 }
-                
+
                 isEmotionTriggered = false;
-                
+
                 // 감정 상태가 변경되면 현재 상태 지속 시간 업데이트 (시퀀스용)
                 if (isProcessingSequence)
                 {
                     timeInCurrentState = 0f;
                 }
-                
-                // 애니메이션 설정 시도
+
+                // 애니메이션 설정 - 즉시 파라미터 변경
                 if (animator != null)
                 {
-                    // 애니메이션 파라미터가 있는지 확인 후 설정
                     try
                     {
-                        // 수정된 부분: 파라미터 존재 확인 후 설정
-                        AnimatorControllerParameter[] parameters = animator.parameters;
-                        bool hasEmotionStateParam = false;
-                        
-                        foreach (var param in parameters)
-                        {
-                            if (param.name == "EmotionState")
-                            {
-                                hasEmotionStateParam = true;
-                                break;
-                            }
-                        }
-                        
-                        if (hasEmotionStateParam)
-                        {
-                            animator.SetInteger("EmotionState", (int)currentEmotion);
-                        }
-                        else
-                        {
-                            // 파라미터가 없으면 트리거 이름으로 시도
-                            string triggerName = GetEmotionTriggerName(currentEmotion);
-                            if (!string.IsNullOrEmpty(triggerName))
-                            {
-                                animator.SetTrigger(triggerName);
-                            }
-                        }
+                        Debug.Log($"[ANIM DEBUG] 감정 변경: {previousEmotion} -> {currentEmotion}");
+
+                        // 즉시 파라미터 업데이트 (코루틴 없이)
+                        UpdateEmotionParameters(currentEmotion);
+
+                        // 파라미터 설정 후 상태 확인
+                        StartCoroutine(VerifyParameterChange());
+
                     }
-                    catch (System.Exception)
+                    catch (System.Exception animException)
                     {
-                        // 애니메이션 파라미터가 없을 경우 무시
+                        Debug.LogError($"[{gameObject.name}] 애니메이션 파라미터 설정 실패: {animException.Message}");
                     }
                 }
-                
+
                 // 이벤트 발생
                 EmotionEventData eventData = new EmotionEventData(currentEmotion, currentEmotionIntensity, gameObject);
                 OnEmotionChanged(eventData);
-                
+
                 if (logGazeEvents) Debug.Log($"[{gameObject.name}] 감정 상태 변경: {previousEmotion} -> {currentEmotion}");
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[{gameObject.name}] 감정 상태 변경 중 오류 발생: {e.Message}");
+            }
+        }
+
+        // 감정 파라미터를 즉시 업데이트하는 메서드
+        private void UpdateEmotionParameters(EmotionState targetEmotion)
+        {
+            if (animator == null) return;
+
+            // 모든 감정 Bool 파라미터 목록
+            string[] allEmotions = { "Happy", "Angry", "Sad", "Exit", "Neutral" };
+            string targetEmotionName = targetEmotion.ToString();
+
+            Debug.Log($"[ANIM DEBUG] 파라미터 업데이트 시작 - 목표 감정: {targetEmotionName}");
+
+            // 1단계: 모든 파라미터를 false로 리셋
+            Debug.Log($"[ANIM DEBUG] 1단계: 모든 파라미터 false로 리셋");
+            foreach (string emotionName in allEmotions)
+            {
+                if (HasParameter(emotionName, AnimatorControllerParameterType.Bool))
+                {
+                    animator.SetBool(emotionName, false);
+                    Debug.Log($"[ANIM DEBUG] 리셋: {emotionName} = false");
+                }
+            }
+
+            // 2단계: 목표 감정 파라미터만 true로 설정
+            Debug.Log($"[ANIM DEBUG] 2단계: {targetEmotionName} 파라미터를 true로 설정");
+            if (HasParameter(targetEmotionName, AnimatorControllerParameterType.Bool))
+            {
+                animator.SetBool(targetEmotionName, true);
+                Debug.Log($"[ANIM DEBUG] 설정완료: {targetEmotionName} = true");
+            }
+            else
+            {
+                Debug.LogError($"[ANIM DEBUG] 오류: '{targetEmotionName}' 파라미터가 존재하지 않습니다!");
+            }
+
+            // 3단계: 설정 후 모든 파라미터 실제 값 확인
+            Debug.Log($"[ANIM DEBUG] 3단계: 설정 후 모든 파라미터 상태 확인");
+            foreach (string emotionName in allEmotions)
+            {
+                if (HasParameter(emotionName, AnimatorControllerParameterType.Bool))
+                {
+                    bool actualValue = animator.GetBool(emotionName);
+                    string status = actualValue ? "TRUE" : "false";
+                    Debug.Log($"[ANIM DEBUG] 최종확인: {emotionName} = {status}");
+                }
+            }
+
+            // 4단계: 예상 결과와 비교
+            Debug.Log($"[ANIM DEBUG] 예상 결과: {targetEmotionName}=true, 나머지=false");
+        }
+
+        // 파라미터 변경 확인용 코루틴
+        private System.Collections.IEnumerator VerifyParameterChange()
+        {
+            yield return new WaitForSeconds(0.1f); // 0.1초 후 확인
+
+            Debug.Log($"[ANIM DEBUG] === 0.1초 후 상태 확인 ===");
+
+            // 파라미터 상태 재확인
+            string[] allEmotions = { "Happy", "Angry", "Sad", "Exit", "Neutral" };
+            foreach (string emotionName in allEmotions)
+            {
+                if (HasParameter(emotionName, AnimatorControllerParameterType.Bool))
+                {
+                    bool value = animator.GetBool(emotionName);
+                    Debug.Log($"[ANIM DEBUG] 확인: {emotionName} = {value}");
+                }
+            }
+
+            // 현재 애니메이터 상태 확인
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            Debug.Log($"[ANIM DEBUG] 현재 애니메이터 상태 해시: {stateInfo.fullPathHash}");
+            Debug.Log($"[ANIM DEBUG] 재생 진행도: {stateInfo.normalizedTime}");
+
+            // 전환 중인지 확인
+            if (animator.IsInTransition(0))
+            {
+                Debug.Log($"[ANIM DEBUG] 전환 중...");
+                AnimatorTransitionInfo transitionInfo = animator.GetAnimatorTransitionInfo(0);
+                Debug.Log($"[ANIM DEBUG] 전환 진행도: {transitionInfo.normalizedTime}");
+            }
+            else
+            {
+                Debug.Log($"[ANIM DEBUG] 전환 완료됨");
+            }
+        }
+
+        // 파라미터 존재 여부 확인 헬퍼 메서드
+        private bool HasParameter(string paramName, AnimatorControllerParameterType paramType)
+        {
+            if (animator == null) return false;
+
+            foreach (AnimatorControllerParameter param in animator.parameters)
+            {
+                if (param.name == paramName && param.type == paramType)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 수동 테스트용 메서드들 (개선)
+        [ContextMenu("Test Happy")]
+        public void TestHappy()
+        {
+            Debug.Log("=== Happy 테스트 시작 ===");
+            UpdateEmotionParameters(EmotionState.Happy);
+            StartCoroutine(VerifyParameterChange());
+        }
+
+        [ContextMenu("Test Angry")]
+        public void TestAngry()
+        {
+            Debug.Log("=== Angry 테스트 시작 ===");
+            UpdateEmotionParameters(EmotionState.Angry);
+            StartCoroutine(VerifyParameterChange());
+        }
+
+        [ContextMenu("Test Sad")]
+        public void TestSad()
+        {
+            Debug.Log("=== Sad 테스트 시작 ===");
+            UpdateEmotionParameters(EmotionState.Sad);
+            StartCoroutine(VerifyParameterChange());
+        }
+
+        [ContextMenu("Test Neutral")]
+        public void TestNeutral()
+        {
+            Debug.Log("=== Neutral 테스트 시작 ===");
+            UpdateEmotionParameters(EmotionState.Neutral);
+            StartCoroutine(VerifyParameterChange());
+        }
+
+        [ContextMenu("Show All Parameters")]
+        public void ShowAllParameters()
+        {
+            if (animator == null)
+            {
+                Debug.LogError("Animator가 null입니다!");
+                return;
+            }
+
+            Debug.Log("=== 현재 모든 파라미터 상태 ===");
+            foreach (var param in animator.parameters)
+            {
+                if (param.type == AnimatorControllerParameterType.Bool)
+                {
+                    bool value = animator.GetBool(param.name);
+                    Debug.Log($"{param.name} (Bool): {value}");
+                }
+            }
+        }
+
+        // 강제로 모든 파라미터 리셋하는 메서드
+        [ContextMenu("Reset All Parameters")]
+        public void ResetAllParameters()
+        {
+            if (animator == null) return;
+
+            Debug.Log("=== 모든 파라미터 리셋 ===");
+            string[] allEmotions = { "Happy", "Angry", "Sad", "Exit", "Neutral" };
+
+            foreach (string emotionName in allEmotions)
+            {
+                if (HasParameter(emotionName, AnimatorControllerParameterType.Bool))
+                {
+                    animator.SetBool(emotionName, false);
+                    Debug.Log($"{emotionName} = false");
+                }
             }
         }
 
