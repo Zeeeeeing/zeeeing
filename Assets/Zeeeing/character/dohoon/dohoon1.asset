@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf0481c4103eab84b962573eeab74094, type: 3}
+  m_Name: dohoon1
+  m_EditorClassIdentifier: 
+  outfits:
+  - type: 10
+    outfit: {fileID: 2444276772279639206, guid: bc6bc6261b918134c8bfba83a161e410, type: 3}
+    colors:
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 6
+    outfit: {fileID: 3923699637637693352, guid: 7d17b159e3ef66f4c892456a25704b8f, type: 3}
+    colors:
+    - {r: 0.7137255, g: 0.16470575, b: 0.16470575, a: 1}
+    - {r: 0.7490196, g: 0.7490196, b: 0.7490196, a: 1}
+    - {r: 0.92549026, g: 0.92549026, b: 0.92549026, a: 1}
+    - {r: 0, g: 0, b: 0, a: 1}
+    - {r: 0.5254902, g: 0.105882294, b: 0.105882294, a: 1}
+  - type: 5
+    outfit: {fileID: 4720084739654115151, guid: 48fc8282e2578b84b956e06119a0e5f8, type: 3}
+    colors:
+    - {r: 0.36477965, g: 0.2906729, b: 0.2512161, a: 1}
+    - {r: 0.22641501, g: 0.22641501, b: 0.22641501, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 4
+    outfit: {fileID: 48922125707816238, guid: 64923d917b10d82449898ae57687eee7, type: 3}
+    colors:
+    - {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
+    - {r: 0.76886797, g: 0.76886797, b: 0.76886797, a: 1}
+    - {r: 0, g: 0.28498182, b: 0.55294114, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 3
+    outfit: {fileID: 3872869516724699529, guid: cdef354aee9313a46bd181b8d0bdd9cb, type: 3}
+    colors:
+    - {r: 0.25882342, g: 0.25882342, b: 0.25882342, a: 1}
+    - {r: 0, g: 0, b: 0, a: 1}
+    - {r: 0.14509797, g: 0.14509797, b: 0.14509797, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 8
+    outfit: {fileID: 2112712420202196445, guid: 115f5aa24f30c0b4ea8b1ef7c241efb3, type: 3}
+    colors:
+    - {r: 0.23669666, g: 0.24601352, b: 0.23796505, a: 0}
+    - {r: 0, g: 1, b: 0, a: 0}
+    - {r: 0, g: 0, b: 1, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  SkinColor:
+  - {r: 0.836478, g: 0.63393456, b: 0.51819545, a: 1}
+  - {r: 0.6163521, g: 0.025196673, b: 0.025196673, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0.21960774, g: 0.21960774, b: 0.21960774, a: 1}
+  - {r: 0.22012568, g: 0.22012568, b: 0.22012568, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  EyeColor:
+  - {r: 1, g: 0.2098889, b: 0, a: 1}
+  - {r: 0.08235294, g: 0.011199444, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  skinAccessory: {fileID: 0}
+  Gender: 100
+  ChestSize: 42.68047
+  FaceShape: 0
+  height: -0.07827568
+  headSize: 0
+  shoulderWidth: 0
+  LashLength: 27.249565
+  BrowSize: 41.142075
+  EarTipLength: 0
+  EyeSocketPosition: {x: 0, y: 0, z: 0}
+  EyeSocketRotation: 0
+  EyeSocketScale: {x: 1, y: 1, z: 1}
+  EyeUp: 83.17001
+  EyeDown: 73.468
+  EyeSquare: 0
+  NoseWidth: 55.83566
+  NoseUp: 20.571068
+  NoseDown: 32.325905
+  NoseBridgeAngle: 0
+  MouthWide: 68.47645
+  MouthThin: 0
+  pupilSize: 2.62
+  irisSize: 1.18
+  outerIrisColorSharpness: 0.5
+  innerIrisColorShapness: 0
+  innerIrisColorOffset: {x: 0, y: -0.12}

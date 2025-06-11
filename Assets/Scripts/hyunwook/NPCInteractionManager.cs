@@ -158,28 +158,37 @@ public class NPCInteractionManager : MonoBehaviour
     {
         if (!isInteracting || currentInteractingNPC == null) return;
         
-        // 상호작용 시간 증가 (빠른 템포용 배율 적용)
+        // 감정 매칭 체크 - 새로 추가된 부분만
+        bool emotionMatched = CheckEmotionMatch(currentInteractingNPC);
+        
+        // 감정이 매칭되지 않으면 꼬시기 진행 안됨
+        if (!emotionMatched)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"감정 불일치로 꼬시기 진행 안됨: {currentInteractingNPC.GetName()}");
+            }
+            return; // 시간 진행 안함
+        }
+        
+        // 기존 코드 그대로 유지 - 감정이 매칭될 때만 실행
         currentInteractionTime += Time.deltaTime * fastEmotionBuildupMultiplier;
         
-        // 플레이어의 현재 감정 상태 가져오기
         EmotionState playerEmotion = EmotionState.Neutral;
         if (playerEmotionController != null)
         {
             playerEmotion = playerEmotionController.GetCurrentEmotion();
         }
         
-        // NPC의 감정 컨트롤러 가져오기
         NPCEmotionController emotionController = currentInteractingNPC.GetComponent<NPCEmotionController>();
         if (emotionController != null)
         {
-            // 플레이어 감정에 따라 NPC 반응 트리거 (강화된 반응)
             ReactToPlayerEmotion(emotionController, playerEmotion);
         }
         
-        // 상호작용 진행률 표시 업데이트 등
         UpdateInteractionProgress();
         
-        // Elite NPC 미니게임 조건 확인 (더 빠른 트리거)
+        // 기존 Elite NPC 및 일반 NPC 로직 그대로 유지
         if (currentInteractionTime >= minInteractionTime && IsEliteNPC(currentInteractingNPC))
         {
             if (ShouldTriggerMiniGame(currentInteractingNPC))
@@ -187,15 +196,13 @@ public class NPCInteractionManager : MonoBehaviour
                 TriggerMiniGame(currentInteractingNPC);
             }
         }
-        // 일반 NPC 꼬시기 성공 조건 (더 빠른 성공)
         else if (!IsEliteNPC(currentInteractingNPC))
         {
             float requiredTime = regularNPCSuccessTime;
             
-            // 플레이어 감정이 NPC 감정과 일치하면 더 빠르게
             if (emotionController != null && playerEmotion == emotionController.GetCurrentEmotion())
             {
-                requiredTime *= (1.0f / matchingEmotionBonus); // 1.5배 빠르게
+                requiredTime *= (1.0f / matchingEmotionBonus);
             }
             
             if (currentInteractionTime >= requiredTime)
@@ -203,6 +210,26 @@ public class NPCInteractionManager : MonoBehaviour
                 HandleRegularNPCSuccess();
             }
         }
+    }
+    
+    private bool CheckEmotionMatch(NPCController npc)
+    {
+        if (playerEmotionController == null) return false;
+        
+        NPCEmotionController npcEmotion = npc.GetComponent<NPCEmotionController>();
+        if (npcEmotion == null) return false;
+
+        EmotionState playerEmotion = playerEmotionController.GetCurrentEmotion();
+        EmotionState npcEmotionState = npcEmotion.GetCurrentEmotion();
+        
+        bool isMatched = playerEmotion == npcEmotionState;
+        
+        if (enableDebugLogs && isMatched)
+        {
+            Debug.Log($"감정 매칭 성공: 플레이어({playerEmotion}) = NPC({npcEmotionState})");
+        }
+        
+        return isMatched;
     }
     
     // 플레이어 감정에 따른 NPC 반응 처리 (강화된 반응)
@@ -417,21 +444,46 @@ public class NPCInteractionManager : MonoBehaviour
     {
         if (currentInteractingNPC == null) return;
         
-        Debug.Log($"일반 NPC {currentInteractingNPC.GetName()} 꼬시기 성공! (빠른 템포 모드)");
+        Debug.Log($"일반 NPC {currentInteractingNPC.GetName()} 꼬시기 성공! (감정 매칭으로 성공)");
         
-        // 감정 상태 행복으로 변경
+        // 기존 코드 그대로 유지
         NPCEmotionController emotionController = currentInteractingNPC.GetComponent<NPCEmotionController>();
         if (emotionController != null)
         {
             emotionController.ChangeEmotionState(EmotionState.Happy);
         }
         
-        // 일반 꼬시기로 NPC 설정 (꼬시기 점수만)
+        // Critical Hit VFX 표시 - 새로 추가된 부분만
+        ShowSeductionSuccessVFX(currentInteractingNPC);
+        
+        // 기존 코드 그대로 유지
         currentInteractingNPC.SetSeducedByRegularInteraction();
         currentInteractingNPC.SetGhostMode(true);
         
-        // 상호작용 종료
         EndInteraction();
+    }
+
+    private void ShowSeductionSuccessVFX(NPCController npc)
+    {
+        if (EmotionGazeManager.Instance != null && EmotionGazeManager.Instance.HasDefaultVFXAsset())
+        {
+            // Critical Hit VFX 직접 생성
+            var criticalHitVFXPrefab = EmotionGazeManager.Instance.GetType()
+                .GetField("criticalHitVFXPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(EmotionGazeManager.Instance) as GameObject;
+            
+            if (criticalHitVFXPrefab != null)
+            {
+                Vector3 vfxPosition = npc.transform.position + Vector3.up * 1.5f;
+                GameObject criticalVFX = Instantiate(criticalHitVFXPrefab, vfxPosition, Quaternion.identity);
+                Destroy(criticalVFX, 2f);
+                
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"꼬시기 성공 VFX 표시: {npc.GetName()}");
+                }
+            }
+        }
     }
     
     // 현재 상호작용 중인 NPC 반환

@@ -7,6 +7,7 @@ namespace ZeeeingGaze
     {
         [Header("Components")]
         [SerializeField] private NPCEmotionController emotionController;
+        [SerializeField] private NavMeshAgent navMeshAgent;
         [SerializeField] private NavMeshObstacle navMeshObstacle;
         [SerializeField] private Animator animator;
         
@@ -29,6 +30,10 @@ namespace ZeeeingGaze
         
         [Header("Fever Mode Integration")]
         [SerializeField] private int feverModePointMultiplier = 2; // 피버 모드 중 추가 점수 배율
+
+        [Header("VFX Settings")]
+        [SerializeField] private GameObject persistentVFXPrefab; // 지속적으로 표시할 VFX 프리팹
+        private GameObject currentPersistentVFX; // 현재 활성화된 지속 VFX
         
         // 현재 활성화된 행동
         private MonoBehaviour currentActiveBehavior;
@@ -79,41 +84,32 @@ namespace ZeeeingGaze
         /// </summary>
         public void SetSeducedByRegularInteraction()
         {
-            if (isProcessingStateChange || isSeduced) return;
-            isProcessingStateChange = true;
+            if (isSeduced) return;
             
-            try
+            isSeduced = true;
+            miniGameCompleted = false;
+            
+            // 꼬시기 점수 추가
+            if (MiniGameManager.Instance != null)
             {
-                isSeduced = true;
+                bool isFeverMode = MiniGameManager.Instance.IsFeverModeActive();
+                int finalScore = pointValue * (isFeverMode ? feverModePointMultiplier : 1);
+                MiniGameManager.Instance.AddScore(finalScore, $"NPC_Seduced_{gameObject.name}");
                 
-                // ⭐ 수정: MiniGameManager에서 피버모드 배율을 적용하므로 여기서는 기본 점수만 전달
-                Debug.Log($"🎯 [{gameObject.name}] 일반 꼬시기 성공! 점수: {pointValue}");
-                
-                // 기본 점수만 전달 - MiniGameManager에서 피버모드 배율 적용됨
-                if (MiniGameManager.Instance != null)
-                {
-                    MiniGameManager.Instance.AddScore(pointValue, $"Regular_Seduction_{npcName}");
-                }
-                
-                // 감정 상태 행복으로 변경
-                if (emotionController != null)
-                {
-                    emotionController.ChangeEmotionState(EmotionState.Happy);
-                }
-                
-                // 애니메이션 설정
-                if (animator != null)
-                {
-                    SetSeducedAnimation();
-                }
-                
-                // 이벤트 발생
-                OnNPCSeduced?.Invoke(this);
+                Debug.Log($"[{gameObject.name}] 일반 꼬시기 점수 추가: {finalScore}" + 
+                        (isFeverMode ? $" (피버 모드 {feverModePointMultiplier}배)" : ""));
             }
-            finally
-            {
-                isProcessingStateChange = false;
-            }
+            
+            // 애니메이션 및 상태 설정
+            SetSeducedAnimation();
+            
+            // 지속적 VFX 시작 - 새로 추가
+            StartPersistentVFX();
+            
+            // 이벤트 알림
+            OnNPCSeduced?.Invoke(this);
+            
+            Debug.Log($"[{gameObject.name}] 일반 상호작용으로 꼬셔졌습니다! 점수: {pointValue}");
         }
         
         /// <summary>
@@ -121,45 +117,93 @@ namespace ZeeeingGaze
         /// </summary>
         public void SetSeducedByMiniGame()
         {
-            if (isProcessingStateChange || isSeduced) return;
-            isProcessingStateChange = true;
+            if (isSeduced) return;
             
-            try
+            isSeduced = true;
+            miniGameCompleted = true;
+            
+            // 기본 꼬시기 점수 + 미니게임 보너스 점수
+            if (MiniGameManager.Instance != null)
             {
-                isSeduced = true;
-                miniGameCompleted = true;
+                bool isFeverMode = MiniGameManager.Instance.IsFeverModeActive();
+                int multiplier = isFeverMode ? feverModePointMultiplier : 1;
                 
-                // ⭐ 수정: MiniGameManager에서 피버모드 배율을 적용하므로 여기서는 기본 점수만 전달
-                Debug.Log($"🎮 [{gameObject.name}] 미니게임 꼬시기 성공! " +
-                        $"꼬시기: {pointValue}점, 보너스: {miniGameBonusScore}점");
+                int seductionScore = pointValue * multiplier;
+                int bonusScore = miniGameBonusScore * multiplier;
+                int totalScore = seductionScore + bonusScore;
                 
-                if (MiniGameManager.Instance != null)
-                {
-                    // 1. 꼬시기 점수 (MiniGameManager에서 피버모드 배율 적용됨)
-                    MiniGameManager.Instance.AddScore(pointValue, $"MiniGame_Seduction_{npcName}");
-                    
-                    // 2. 미니게임 보너스 점수 (MiniGameManager에서 피버모드 배율 적용됨)
-                    MiniGameManager.Instance.AddScore(miniGameBonusScore, $"MiniGame_Bonus_{npcName}");
-                }
+                MiniGameManager.Instance.AddScore(totalScore, $"NPC_MiniGame_{gameObject.name}");
                 
-                // 감정 상태 변경
-                if (emotionController != null)
-                {
-                    emotionController.ChangeEmotionState(EmotionState.Happy);
-                }
-                
-                // 애니메이션 설정
-                if (animator != null)
-                {
-                    SetSeducedAnimation();
-                }
-                
-                // 이벤트 발생
-                OnNPCSeduced?.Invoke(this);
+                Debug.Log($"[{gameObject.name}] 미니게임 꼬시기 점수 추가: {totalScore} " +
+                        $"(꼬시기: {seductionScore}, 보너스: {bonusScore})" +
+                        (isFeverMode ? $" (피버 모드 {feverModePointMultiplier}배)" : ""));
             }
-            finally
+            
+            // 애니메이션 및 상태 설정
+            SetSeducedAnimation();
+            
+            // 지속적 VFX 시작 - 새로 추가
+            StartPersistentVFX();
+            
+            // 이벤트 알림
+            OnNPCSeduced?.Invoke(this);
+            
+            Debug.Log($"[{gameObject.name}] 미니게임으로 꼬셔졌습니다! " +
+                    $"꼬시기: {pointValue}점, 보너스: {miniGameBonusScore}점");
+        }
+
+        private void StartPersistentVFX()
+        {
+            // 기존 VFX가 있으면 제거
+            if (currentPersistentVFX != null)
             {
-                isProcessingStateChange = false;
+                Destroy(currentPersistentVFX);
+            }
+            
+            // EmotionGazeManager에서 CriticalHitVFXPrefab 가져오기
+            if (EmotionGazeManager.Instance != null)
+            {
+                var criticalHitVFXPrefab = EmotionGazeManager.Instance.GetType()
+                    .GetField("criticalHitVFXPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(EmotionGazeManager.Instance) as GameObject;
+                
+                if (criticalHitVFXPrefab != null)
+                {
+                    Vector3 vfxPosition = transform.position + Vector3.up * 1.5f;
+                    currentPersistentVFX = Instantiate(criticalHitVFXPrefab, vfxPosition, Quaternion.identity);
+                    
+                    // VFX를 NPC에 부착하여 함께 이동하도록 설정
+                    currentPersistentVFX.transform.SetParent(transform, true);
+                    
+                    // 파티클 시스템을 루핑으로 설정
+                    ParticleSystem[] particles = currentPersistentVFX.GetComponentsInChildren<ParticleSystem>();
+                    foreach (var particle in particles)
+                    {
+                        var main = particle.main;
+                        main.loop = true;
+                        main.startLifetime = 2.0f; // 개별 파티클 수명
+                    }
+                    
+                    Debug.Log($"[{gameObject.name}] 지속적 VFX 시작됨");
+                }
+            }
+            
+            // 대체 VFX가 설정되어 있다면 사용
+            if (currentPersistentVFX == null && persistentVFXPrefab != null)
+            {
+                Vector3 vfxPosition = transform.position + Vector3.up * 1.5f;
+                currentPersistentVFX = Instantiate(persistentVFXPrefab, vfxPosition, Quaternion.identity);
+                currentPersistentVFX.transform.SetParent(transform, true);
+            }
+        }
+
+        private void StopPersistentVFX()
+        {
+            if (currentPersistentVFX != null)
+            {
+                Destroy(currentPersistentVFX);
+                currentPersistentVFX = null;
+                Debug.Log($"[{gameObject.name}] 지속적 VFX 중지됨");
             }
         }
         
@@ -226,7 +270,9 @@ namespace ZeeeingGaze
                 
                 // NavMesh 및 물리 컴포넌트 제어
                 if (navMeshObstacle != null) navMeshObstacle.enabled = !enabled;
-                
+                if (navMeshAgent != null) navMeshAgent.enabled = !enabled;
+                if (animator!= null) animator.enabled = !enabled;
+
                 AutonomousDriver driver = GetComponent<AutonomousDriver>();
                 if (driver != null) driver.enabled = !enabled;
                 
@@ -518,5 +564,10 @@ namespace ZeeeingGaze
         
         // 이벤트
         public event System.Action<NPCController> OnNPCSeduced;
+
+        private void OnDestroy()
+        {
+            StopPersistentVFX();
+        }
     }
 }
