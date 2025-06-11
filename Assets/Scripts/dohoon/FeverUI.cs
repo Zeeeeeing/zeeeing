@@ -17,6 +17,13 @@ public class FeverUI : MonoBehaviour
     [SerializeField] private Image feverModeBackground;
     [SerializeField] private ParticleSystem feverModeParticles;
     
+    // 런타임에 생성된 파티클 인스턴스
+    private ParticleSystem feverParticleInstance;
+    
+    [Header("User Body Particles")]  // 추가
+    [SerializeField] private Transform playerBody; // VR 플레이어 몸체 (없으면 자동으로 찾음)
+    [SerializeField] private Vector3 particleOffset = new Vector3(0, 0.5f, 0); // 파티클 위치 오프셋
+    
     [Header("Animation Settings")]
     [SerializeField] private float pulseSpeed = 2f;
     [SerializeField] private float pulseIntensity = 0.3f;
@@ -55,6 +62,12 @@ public class FeverUI : MonoBehaviour
     
     private void Start()
     {
+        // 플레이어 몸체 자동 찾기
+        FindPlayerBody();
+        
+        // 파티클을 플레이어 몸에 위치시키기
+        SetupParticlesOnPlayerBody();
+        
         // MiniGameManager 이벤트 구독
         MiniGameManager miniGameManager = FindAnyObjectByType<MiniGameManager>();
         if (miniGameManager != null)
@@ -62,6 +75,129 @@ public class FeverUI : MonoBehaviour
             // 피버 게이지 업데이트 이벤트 구독 (리플렉션으로 내부 이벤트 접근)
             // 실제로는 MiniGameManager에서 직접 이 UI를 참조하도록 설정해야 함
         }
+    }
+    
+    // 플레이어 몸체 자동 찾기
+    private void FindPlayerBody()
+    {
+        if (playerBody != null) return;
+        
+        // VR 카메라 찾기
+        Camera vrCamera = Camera.main;
+        if (vrCamera == null)
+        {
+            vrCamera = FindAnyObjectByType<Camera>();
+        }
+        
+        if (vrCamera != null)
+        {
+            // VR에서는 카메라가 플레이어 머리이므로, 몸체는 카메라 위치 기준으로 설정
+            playerBody = vrCamera.transform;
+            Debug.Log($"[FeverUI] 플레이어 몸체를 VR 카메라로 설정: {playerBody.name}");
+        }
+        else
+        {
+            Debug.LogWarning("[FeverUI] 플레이어 몸체를 찾을 수 없습니다!");
+        }
+    }
+    
+    // 파티클을 플레이어 몸에 위치시키기
+    private void SetupParticlesOnPlayerBody()
+    {
+        if (feverModeParticles == null || playerBody == null) 
+        {
+            Debug.LogWarning("[FeverUI] feverModeParticles 또는 playerBody가 null입니다.");
+            return;
+        }
+        
+        // 기존 인스턴스가 있으면 제거
+        if (feverParticleInstance != null)
+        {
+            DestroyImmediate(feverParticleInstance.gameObject);
+        }
+        
+        // 파티클 시스템을 인스턴스화
+        GameObject particleObject = Instantiate(feverModeParticles.gameObject);
+        feverParticleInstance = particleObject.GetComponent<ParticleSystem>();
+        
+        // 인스턴스를 플레이어 몸체의 자식으로 설정
+        feverParticleInstance.transform.SetParent(playerBody, false);
+        feverParticleInstance.transform.localPosition = particleOffset;
+        
+        // 파티클 시스템 설정을 유저 몸에 맞게 조정
+        ConfigureFeverParticles();
+        
+        // 초기에는 정지 상태
+        feverParticleInstance.Stop();
+        
+        Debug.Log($"[FeverUI] 파티클 인스턴스가 플레이어 몸에 생성됨. 위치: {feverParticleInstance.transform.position}");
+        Debug.Log($"[FeverUI] 파티클 부모: {feverParticleInstance.transform.parent?.name}");
+        Debug.Log($"[FeverUI] 파티클 로컬 위치: {feverParticleInstance.transform.localPosition}");
+    }
+    
+    // Fever 파티클 설정
+    private void ConfigureFeverParticles()
+    {
+        if (feverParticleInstance == null) 
+        {
+            Debug.LogWarning("[FeverUI] feverParticleInstance가 null입니다.");
+            return;
+        }
+        
+        // 메인 모듈
+        var main = feverParticleInstance.main;
+        main.startLifetime = 3.0f;
+        main.startSpeed = 2.0f;
+        main.startColor = Color.yellow;
+        main.startSize = 0.15f;
+        main.maxParticles = 50;
+        main.loop = true;
+        main.simulationSpace = ParticleSystemSimulationSpace.World; // 월드 좌표계 사용
+        
+        // 방출 모듈
+        var emission = feverParticleInstance.emission;
+        emission.rateOverTime = 20f;
+        
+        // 모양 모듈 (플레이어 몸 주변에서 방출)
+        var shape = feverParticleInstance.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.3f; // 플레이어 몸 크기에 맞춰 조정
+        
+        // 속도 모듈 (위쪽으로 상승하는 효과)
+        var velocityOverLifetime = feverParticleInstance.velocityOverLifetime;
+        velocityOverLifetime.enabled = true;
+        velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
+        velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(1.0f, 3.0f);
+        
+        // 크기 변화 (점점 커졌다가 작아지기)
+        var sizeOverLifetime = feverParticleInstance.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        AnimationCurve sizeCurve = new AnimationCurve();
+        sizeCurve.AddKey(0f, 0.5f);
+        sizeCurve.AddKey(0.3f, 1.2f);
+        sizeCurve.AddKey(1f, 0f);
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1.0f, sizeCurve);
+        
+        // 색상 변화 (황금빛에서 흰색으로 페이드아웃)
+        var colorOverLifetime = feverParticleInstance.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] { 
+                new GradientColorKey(Color.yellow, 0.0f),
+                new GradientColorKey(new Color(1f, 0.8f, 0f), 0.5f), // 진한 황금색
+                new GradientColorKey(Color.white, 1.0f)
+            },
+            new GradientAlphaKey[] { 
+                new GradientAlphaKey(1.0f, 0.0f),
+                new GradientAlphaKey(0.8f, 0.7f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        colorOverLifetime.color = gradient;
+        
+        Debug.Log("[FeverUI] Fever 파티클 인스턴스 설정 완료");
     }
     
     private void InitializeUI()
@@ -194,10 +330,24 @@ public class FeverUI : MonoBehaviour
         // 새 애니메이션 시작
         feverAnimationCoroutine = StartCoroutine(FeverModeAnimation());
         
-        // 파티클 효과 시작
-        if (feverModeParticles != null)
+        // 파티클 효과 시작 - 이제 유저 몸에서 발생!
+        if (feverParticleInstance != null)
         {
-            feverModeParticles.Play();
+            // 파티클 위치를 플레이어 몸으로 다시 확인/설정
+            if (playerBody != null)
+            {
+                feverParticleInstance.transform.position = playerBody.position + particleOffset;
+            }
+            
+            feverParticleInstance.Play();
+            Debug.Log("[FeverUI] 🔥 유저 몸에서 Fever 파티클 시작!");
+            Debug.Log($"[FeverUI] 파티클 위치: {feverParticleInstance.transform.position}");
+            Debug.Log($"[FeverUI] 파티클 활성화 상태: {feverParticleInstance.gameObject.activeInHierarchy}");
+            Debug.Log($"[FeverUI] 파티클 재생 상태: {feverParticleInstance.isPlaying}");
+        }
+        else
+        {
+            Debug.LogError("[FeverUI] ❌ feverParticleInstance가 null입니다!");
         }
         
         // 사운드 루프 시작
@@ -220,9 +370,14 @@ public class FeverUI : MonoBehaviour
         }
         
         // 파티클 효과 중지
-        if (feverModeParticles != null)
+        if (feverParticleInstance != null)
         {
-            feverModeParticles.Stop();
+            feverParticleInstance.Stop();
+            Debug.Log("[FeverUI] ❄️ 유저 몸의 Fever 파티클 중지!");
+        }
+        else
+        {
+            Debug.LogWarning("[FeverUI] ⚠️ feverParticleInstance가 null이어서 파티클을 중지할 수 없습니다!");
         }
         
         // 사운드 중지
@@ -270,6 +425,18 @@ public class FeverUI : MonoBehaviour
             {
                 float glowIntensity = Mathf.Sin(time * 2f) * 0.3f + 1f;
                 feverGaugeFill.color = Color.white * glowIntensity;
+            }
+            
+            // 유저 몸의 파티클 강도 조절 (추가)
+            if (feverParticleInstance != null && playerBody != null)
+            {
+                // 플레이어가 움직여도 파티클이 따라가도록 위치 업데이트
+                feverParticleInstance.transform.position = playerBody.position + particleOffset;
+                
+                // 펄스에 맞춰 파티클 강도 조절
+                float particleIntensity = Mathf.Sin(time * 1.2f) * 0.4f + 1.0f;
+                var emission = feverParticleInstance.emission;
+                emission.rateOverTime = 20f * particleIntensity;
             }
             
             yield return null;
@@ -371,6 +538,12 @@ public class FeverUI : MonoBehaviour
         // 코루틴 정리
         StopAllCoroutines();
         
+        // 파티클 인스턴스 정리
+        if (feverParticleInstance != null)
+        {
+            DestroyImmediate(feverParticleInstance.gameObject);
+        }
+        
         // 오디오 정리
         if (audioSource != null && audioSource.isPlaying)
         {
@@ -384,6 +557,12 @@ public class FeverUI : MonoBehaviour
         if (!isFeverModeActive && gaugeAnimationCoroutine == null)
         {
             UpdateGaugeVisuals();
+        }
+        
+        // 피버 모드일 때 파티클 위치를 지속적으로 플레이어 몸에 맞춤 (추가)
+        if (isFeverModeActive && feverParticleInstance != null && playerBody != null)
+        {
+            feverParticleInstance.transform.position = playerBody.position + particleOffset;
         }
     }
 }
