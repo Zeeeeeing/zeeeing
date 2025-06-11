@@ -105,7 +105,51 @@ namespace ZeeeingGaze
             Collider col = GetComponent<Collider>();
             if (col != null)
             {
-                col.isTrigger = true; // 트리거로 설정
+                // ⭐ MeshCollider가 concave인 경우 Trigger 설정 불가능한 에러 방지
+                if (col is MeshCollider meshCollider)
+                {
+                    if (!meshCollider.convex)
+                    {
+                        Debug.LogWarning($"[{gameObject.name}] Concave MeshCollider는 Trigger로 사용할 수 없습니다. Convex로 설정하거나 다른 Collider를 사용하세요.");
+                        
+                        // 자동으로 convex로 설정 시도
+                        try
+                        {
+                            meshCollider.convex = true;
+                            meshCollider.isTrigger = true;
+                            Debug.Log($"[{gameObject.name}] MeshCollider를 convex로 변경하고 Trigger 설정 완료");
+                        }
+                        catch (System.Exception e)
+                        {
+                            Debug.LogError($"[{gameObject.name}] MeshCollider convex 설정 실패: {e.Message}");
+                            
+                            // MeshCollider 제거 후 SphereCollider로 교체
+                            DestroyImmediate(meshCollider);
+                            SphereCollider sphereCol = gameObject.AddComponent<SphereCollider>();
+                            sphereCol.radius = 0.5f; // 기본 반지름
+                            sphereCol.isTrigger = true;
+                            Debug.Log($"[{gameObject.name}] MeshCollider를 SphereCollider로 교체 완료");
+                        }
+                    }
+                    else
+                    {
+                        // 이미 convex인 경우
+                        meshCollider.isTrigger = true;
+                    }
+                }
+                else
+                {
+                    // MeshCollider가 아닌 경우 (SphereCollider, BoxCollider 등)
+                    col.isTrigger = true;
+                }
+            }
+            else
+            {
+                // 콜라이더가 없는 경우 SphereCollider 추가
+                SphereCollider sphereCol = gameObject.AddComponent<SphereCollider>();
+                sphereCol.radius = 0.5f;
+                sphereCol.isTrigger = true;
+                Debug.Log($"[{gameObject.name}] 콜라이더가 없어서 SphereCollider 추가");
             }
         }
         

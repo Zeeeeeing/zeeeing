@@ -34,7 +34,7 @@ public class HeartGazeMiniGame : MonoBehaviour
     
     [Header("Heart Collection Settings")]
     [SerializeField] private float gazeHoldTime = 0.8f; // 하트를 바라봐야 하는 시간 (감소)
-    [SerializeField] private float collectionRadius = 0.3f; // 하트 콜라이더 크기 (시선 감지용)
+    [SerializeField] private float collectionRadius = 0.1f; // 하트 콜라이더 크기 (시선 감지용)
     [SerializeField] private int heartLayer = 0; // 하트가 배치될 레이어 (0-31 범위)
     
     // 게임 상태 변수
@@ -248,8 +248,8 @@ public class HeartGazeMiniGame : MonoBehaviour
     
     private void SetupHeart(GameObject heart)
     {
-        // 하트 크기 조정 (더 크게, 보기 쉽게)
-        heart.transform.localScale = Vector3.one * Random.Range(0.15f, 0.25f);
+        // 하트 크기 조정 (0.25배로 고정)
+        heart.transform.localScale = Vector3.one * 0.05f;
         
         // 레이어 설정 (0-31 범위 체크)
         if (heartLayer >= 0 && heartLayer <= 31)
@@ -262,24 +262,28 @@ public class HeartGazeMiniGame : MonoBehaviour
             heart.layer = 0;
         }
         
-        // 콜라이더 확인 및 추가
-        Collider heartCollider = heart.GetComponent<Collider>();
-        if (heartCollider == null)
+        // 기존 concave MeshCollider 제거 후 SphereCollider로 교체
+        Collider[] existingColliders = heart.GetComponents<Collider>();
+        for (int i = 0; i < existingColliders.Length; i++)
         {
-            SphereCollider sphereCollider = heart.AddComponent<SphereCollider>();
-            sphereCollider.radius = collectionRadius; // 시선 감지를 위한 콜라이더 크기
-            sphereCollider.isTrigger = true;
-            Debug.Log($"하트에 SphereCollider 추가됨 (반경: {collectionRadius})");
-        }
-        else
-        {
-            heartCollider.isTrigger = true;
-            // 기존 콜라이더가 SphereCollider라면 크기 조정
-            if (heartCollider is SphereCollider sphere)
+            if (existingColliders[i] is MeshCollider meshCol && !meshCol.convex)
             {
-                sphere.radius = collectionRadius;
+                Debug.Log($"Concave MeshCollider 발견, 제거 중: {heart.name}");
+                DestroyImmediate(existingColliders[i]);
             }
         }
+        
+        // SphereCollider 확인 및 추가 (EyeTracking 감지를 위해 필수)
+        SphereCollider sphereCollider = heart.GetComponent<SphereCollider>();
+        if (sphereCollider == null)
+        {
+            sphereCollider = heart.AddComponent<SphereCollider>();
+            Debug.Log($"하트에 SphereCollider 추가됨: {heart.name}");
+        }
+        
+        // ⭐ EyeTracking을 위한 SphereCollider 설정
+        sphereCollider.radius = collectionRadius * 1.0f; // EyeTracking 감지 영역
+        sphereCollider.isTrigger = true; // EyeTracking을 위해 true로 설정
         
         // Rigidbody 확인 및 추가 (EyeInteractable 필요)
         Rigidbody rb = heart.GetComponent<Rigidbody>();
@@ -287,51 +291,97 @@ public class HeartGazeMiniGame : MonoBehaviour
         {
             rb = heart.AddComponent<Rigidbody>();
         }
-        rb.isKinematic = true;
+        rb.isKinematic = true; // 물리 영향 안받도록
         rb.useGravity = false;
         
-        // EyeInteractable 컴포넌트 추가
+        // ⭐ EyeInteractable 컴포넌트 반드시 추가 (EyeTracking을 위해 필수)
         EyeInteractable eyeInteractable = heart.GetComponent<EyeInteractable>();
         if (eyeInteractable == null)
         {
             eyeInteractable = heart.AddComponent<EyeInteractable>();
-            Debug.Log("하트에 EyeInteractable 추가됨");
+            Debug.Log($"하트에 EyeInteractable 추가됨 (EyeTracking용): {heart.name}");
         }
         
         // 하트 수집 추적 초기화
         heartGazeTimes[heart] = 0f;
         
-        Debug.Log($"하트 설정 완료: 크기={heart.transform.localScale}, 레이어={heart.layer}, 콜라이더 반경={collectionRadius}");
+        Debug.Log($"하트 설정 완료 (EyeTracking 지원): 크기={heart.transform.localScale}, 레이어={heart.layer}, 콜라이더 반경={sphereCollider.radius}");
     }
     
     private void DetectHeartCollection()
     {
         if (cameraTransform == null) return;
         
-        // 현재 바라보고 있는 하트 찾기
         GameObject gazedHeart = null;
         float closestDistance = float.MaxValue;
         
+        // ⭐ EyeTracking 기반 감지 (1순위)
         foreach (GameObject heart in activeHearts)
         {
             if (heart == null) continue;
             
-            // 시선 방향 계산
-            Vector3 directionToHeart = (heart.transform.position - cameraTransform.position).normalized;
-            float dotProduct = Vector3.Dot(cameraTransform.forward, directionToHeart);
-            
-            // 거리 계산
-            float distance = Vector3.Distance(cameraTransform.position, heart.transform.position);
-            
-            // 시선 각도 및 거리 조건 확인 (더 관대하게)
-            if (dotProduct > 0.8f && distance <= maxSpawnDistance && distance < closestDistance)
+            // EyeInteractable 컴포넌트로 실제 시선 추적 확인
+            EyeInteractable eyeInteractable = heart.GetComponent<EyeInteractable>();
+            if (eyeInteractable != null && eyeInteractable.IsHovered)
             {
-                // EyeInteractable로 호버 상태 확인
-                EyeInteractable eyeInteractable = heart.GetComponent<EyeInteractable>();
-                if (eyeInteractable != null && eyeInteractable.IsHovered)
+                float distance = Vector3.Distance(cameraTransform.position, heart.transform.position);
+                if (distance < closestDistance)
                 {
                     gazedHeart = heart;
                     closestDistance = distance;
+                }
+                
+                Debug.Log($"👁️ EyeTracking으로 하트 감지: {heart.name}, 거리: {distance:F2}m");
+            }
+        }
+        
+        // ⭐ 백업: 화면 중앙 기반 감지 (EyeTracking 실패 시)
+        if (gazedHeart == null)
+        {
+            // 물리 레이캐스트로 직접 하트 감지
+            Ray gazeRay = new Ray(cameraTransform.position, cameraTransform.forward);
+            RaycastHit[] hits = Physics.RaycastAll(gazeRay, maxSpawnDistance + 1f);
+            
+            // 레이캐스트로 감지된 모든 오브젝트 확인
+            foreach (RaycastHit hit in hits)
+            {
+                GameObject hitObject = hit.collider.gameObject;
+                
+                // 활성 하트 목록에 있는지 확인
+                if (activeHearts.Contains(hitObject))
+                {
+                    float distance = hit.distance;
+                    if (distance < closestDistance)
+                    {
+                        gazedHeart = hitObject;
+                        closestDistance = distance;
+                    }
+                    
+                    Debug.Log($"🎯 레이캐스트로 하트 감지 (백업): {hitObject.name}, 거리: {distance:F2}m");
+                }
+            }
+            
+            // 3차 백업: 각도 기반 감지
+            if (gazedHeart == null)
+            {
+                foreach (GameObject heart in activeHearts)
+                {
+                    if (heart == null) continue;
+                    
+                    // 시선 방향 계산
+                    Vector3 directionToHeart = (heart.transform.position - cameraTransform.position).normalized;
+                    float dotProduct = Vector3.Dot(cameraTransform.forward, directionToHeart);
+                    
+                    // 거리 계산
+                    float distance = Vector3.Distance(cameraTransform.position, heart.transform.position);
+                    
+                    // 더 엄격한 각도 조건
+                    if (dotProduct > 0.85f && distance <= maxSpawnDistance && distance < closestDistance)
+                    {
+                        gazedHeart = heart;
+                        closestDistance = distance;
+                        Debug.Log($"🔄 각도 기반으로 하트 감지 (3차 백업): {heart.name}, 각도: {dotProduct:F2}, 거리: {distance:F2}m");
+                    }
                 }
             }
         }
@@ -343,47 +393,136 @@ public class HeartGazeMiniGame : MonoBehaviour
             if (currentGazedHeart != null && heartGazeTimes.ContainsKey(currentGazedHeart))
             {
                 heartGazeTimes[currentGazedHeart] = 0f;
+                Debug.Log($"⏰ 이전 하트 응시 시간 리셋: {currentGazedHeart.name}");
             }
             
             currentGazedHeart = gazedHeart;
+            
+            if (currentGazedHeart != null)
+            {
+                // EyeTracking 여부 표시
+                EyeInteractable eyeInteractable = currentGazedHeart.GetComponent<EyeInteractable>();
+                bool isEyeTracking = eyeInteractable != null && eyeInteractable.IsHovered;
+                Debug.Log($"👁️ 새로운 하트에 시선 고정: {currentGazedHeart.name} (EyeTracking: {isEyeTracking})");
+            }
         }
         
         // 현재 바라보고 있는 하트의 응시 시간 증가
         if (currentGazedHeart != null && heartGazeTimes.ContainsKey(currentGazedHeart))
         {
             heartGazeTimes[currentGazedHeart] += Time.deltaTime;
+            float currentGazeTime = heartGazeTimes[currentGazedHeart];
+            
+            // 응시 진행률 표시 (디버깅용)
+            float progress = currentGazeTime / gazeHoldTime;
+            if (progress % 0.2f < Time.deltaTime) // 20%마다 로그
+            {
+                // EyeTracking 상태 표시
+                EyeInteractable eyeInteractable = currentGazedHeart.GetComponent<EyeInteractable>();
+                bool isEyeTracking = eyeInteractable != null && eyeInteractable.IsHovered;
+                string trackingMethod = isEyeTracking ? "👁️EyeTracking" : "🎯화면중앙";
+                
+                Debug.Log($"{trackingMethod} 하트 응시 중: {currentGazedHeart.name} - {progress:P0} ({currentGazeTime:F1}s/{gazeHoldTime:F1}s)");
+            }
             
             // 충분히 오래 바라봤으면 수집
-            if (heartGazeTimes[currentGazedHeart] >= gazeHoldTime)
+            if (currentGazeTime >= gazeHoldTime)
             {
+                Debug.Log($"✅ 하트 수집 조건 달성! {currentGazedHeart.name} - {currentGazeTime:F2}초");
                 CollectHeart(currentGazedHeart);
+            }
+        }
+        
+        // 시각적 피드백: 응시 중인 하트 강조
+        HighlightGazedHeart();
+    }
+
+    private void HighlightGazedHeart()
+    {
+        foreach (GameObject heart in activeHearts)
+        {
+            if (heart == null) continue;
+            
+            Renderer heartRenderer = heart.GetComponent<Renderer>();
+            if (heartRenderer == null) continue;
+            
+            if (heart == currentGazedHeart)
+            {
+                // 응시 중인 하트는 밝게
+                float progress = heartGazeTimes.ContainsKey(heart) ? heartGazeTimes[heart] / gazeHoldTime : 0f;
+                float intensity = 1.0f + Mathf.Sin(Time.time * 8f) * 0.3f; // 깜빡임 효과
+                Color highlightColor = Color.Lerp(Color.white, Color.yellow, progress) * intensity;
+                
+                if (heartRenderer.material.HasProperty("_Color"))
+                {
+                    heartRenderer.material.color = highlightColor;
+                }
+                else if (heartRenderer.material.HasProperty("_BaseColor"))
+                {
+                    heartRenderer.material.SetColor("_BaseColor", highlightColor);
+                }
+            }
+            else
+            {
+                // 일반 하트는 기본 색상
+                if (heartRenderer.material.HasProperty("_Color"))
+                {
+                    heartRenderer.material.color = Color.red; // 하트 기본 색상
+                }
+                else if (heartRenderer.material.HasProperty("_BaseColor"))
+                {
+                    heartRenderer.material.SetColor("_BaseColor", Color.red);
+                }
             }
         }
     }
     
     private IEnumerator HeartLifetimeRoutine(GameObject heart)
     {
-        if (heart == null) yield break;
+        if (heart == null) 
+        {
+            Debug.LogWarning("HeartLifetimeRoutine: heart가 null입니다");
+            yield break;
+        }
         
-        // 하트가 자동으로 사라지는 시간
-        yield return new WaitForSeconds(heartLifetime);
+        float elapsed = 0f;
         
-        // 아직 수집되지 않은 하트라면 제거
+        // 하트가 자동으로 사라지는 시간까지 대기
+        while (elapsed < heartLifetime && heart != null && activeHearts.Contains(heart))
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        // ⭐ 수명이 다한 하트 안전하게 제거
         if (heart != null && activeHearts.Contains(heart))
         {
-            Debug.Log($"하트 수명 만료로 제거. 남은 활성 하트: {activeHearts.Count - 1}");
+            Debug.Log($"하트 수명 만료로 제거: {heart.name}. 남은 활성 하트: {activeHearts.Count - 1}");
             RemoveHeart(heart);
-            Destroy(heart);
+            
+            // 오브젝트 파괴
+            if (heart != null)
+            {
+                Destroy(heart);
+            }
+        }
+        else
+        {
+            Debug.Log($"하트가 이미 제거됨 또는 null: {heart?.name ?? "null"}");
         }
     }
-    
+
     private void CollectHeart(GameObject heart)
     {
-        if (!isGameActive || heart == null || !activeHearts.Contains(heart)) return;
+        if (!isGameActive || heart == null || !activeHearts.Contains(heart)) 
+        {
+            Debug.LogWarning($"하트 수집 조건 불만족: 게임활성={isGameActive}, 하트null={heart == null}, 목록포함={activeHearts.Contains(heart)}");
+            return;
+        }
         
         Debug.Log($"하트 수집! 응시 시간: {heartGazeTimes[heart]:F2}초");
         
-        // 목록에서 제거
+        // ⭐ 먼저 목록에서 제거 (중복 처리 방지)
         RemoveHeart(heart);
         
         // 하트 수집 카운트 증가
@@ -395,30 +534,48 @@ public class HeartGazeMiniGame : MonoBehaviour
         // 성공 피드백
         PlaySuccessFeedback();
         
-        // 하트 제거 (VFX와 함께)
-        StartCoroutine(DestroyHeartWithEffect(heart));
+        // ⭐ 즉시 하트 제거 (코루틴 사용하지 않음)
+        if (heart != null)
+        {
+            // 간단한 효과만 적용 후 즉시 제거
+            heart.transform.localScale *= 1.2f; // 약간 커지는 효과
+            Destroy(heart);
+            Debug.Log($"하트 즉시 제거됨: {heart.name}");
+        }
         
-        // 목표 달성 확인
+        // ⭐ 목표 달성 확인 (하트가 확실히 제거된 후)
+        Debug.Log($"현재 수집된 하트: {heartsCollected}/{totalHeartsToCollect}");
         if (heartsCollected >= totalHeartsToCollect)
         {
+            Debug.Log("목표 달성! 게임 성공으로 종료");
             GameOver(true);
         }
     }
     
     private void RemoveHeart(GameObject heart)
     {
-        if (heart == null) return;
+        if (heart == null) 
+        {
+            Debug.LogWarning("RemoveHeart: heart가 null입니다");
+            return;
+        }
         
-        activeHearts.Remove(heart);
+        // 활성 하트 목록에서 제거
+        bool removed = activeHearts.Remove(heart);
+        Debug.Log($"활성 하트 목록에서 제거: {removed}, 남은 하트 수: {activeHearts.Count}");
         
+        // 응시 시간 추적에서 제거
         if (heartGazeTimes.ContainsKey(heart))
         {
             heartGazeTimes.Remove(heart);
+            Debug.Log($"응시 시간 추적에서 제거: {heart.name}");
         }
         
+        // 현재 응시 중인 하트였다면 초기화
         if (currentGazedHeart == heart)
         {
             currentGazedHeart = null;
+            Debug.Log("현재 응시 중인 하트 초기화됨");
         }
     }
     
@@ -493,39 +650,66 @@ public class HeartGazeMiniGame : MonoBehaviour
     
     private void ClearAllHearts()
     {
-        foreach (GameObject heart in activeHearts)
+        Debug.Log($"모든 하트 정리 시작. 현재 활성 하트 수: {activeHearts.Count}");
+        
+        // ⭐ 역순으로 제거 (안전성 향상)
+        for (int i = activeHearts.Count - 1; i >= 0; i--)
         {
+            GameObject heart = activeHearts[i];
             if (heart != null)
             {
+                Debug.Log($"하트 제거 중: {heart.name}");
                 Destroy(heart);
             }
         }
         
+        // 모든 목록 초기화
         activeHearts.Clear();
         heartGazeTimes.Clear();
         currentGazedHeart = null;
+        
+        Debug.Log("모든 하트 정리 완료");
     }
     
     private void GameOver(bool success)
     {
+        if (!isGameActive)
+        {
+            Debug.LogWarning("[HeartGazeMiniGame] 이미 게임이 비활성화된 상태에서 GameOver 호출됨");
+            return;
+        }
+        
+        Debug.Log($"[HeartGazeMiniGame] GameOver 호출: 성공={success}, 수집된 하트={heartsCollected}");
+        
+        // ⭐ 게임 상태를 먼저 비활성화 (중복 호출 방지)
         isGameActive = false;
         
-        // 모든 코루틴 정지
+        // 모든 코루틴 정지 (하트 수명 코루틴 포함)
         StopAllCoroutines();
         
         // 게임 UI 비활성화
         if (gameUI != null)
             gameUI.SetActive(false);
         
-        // 모든 하트 정리
+        // ⭐ 모든 하트 강제 정리 (마지막 하트 포함)
+        Debug.Log("게임 종료로 인한 모든 하트 강제 정리");
         ClearAllHearts();
         
-        // 게임 완료 이벤트 호출
-        if (OnGameCompleted != null) 
+        // ⭐ MiniGameUI 파괴 여부 확인 후 이벤트 호출
+        try
         {
-            Debug.Log($"HeartGame 완료 이벤트 발생: 성공={success}, 점수={heartsCollected} (빠른 템포 모드)");
-            OnGameCompleted.Invoke(success, heartsCollected);
+            if (OnGameCompleted != null) 
+            {
+                Debug.Log($"[HeartGazeMiniGame] 게임 완료 이벤트 발생: 성공={success}, 점수={heartsCollected}");
+                OnGameCompleted.Invoke(success, heartsCollected);
+            }
         }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[HeartGazeMiniGame] 게임 완료 이벤트 호출 중 에러: {e.Message}");
+        }
+        
+        Debug.Log("[HeartGazeMiniGame] GameOver 처리 완료");
     }
     
     public void StopGame()
@@ -551,17 +735,38 @@ public class HeartGazeMiniGame : MonoBehaviour
 
     private void OnDisable()
     {
-        // 게임 활성화 상태라면 중지
+        Debug.Log("[HeartGazeMiniGame] OnDisable 호출됨");
+        
+        // ⭐ 게임이 활성화된 상태에서만 정리 작업 수행
         if (isGameActive)
         {
-            GameOver(false);
+            Debug.Log("[HeartGazeMiniGame] 게임 활성화 상태에서 강제 종료");
+            
+            // 이벤트 호출 전에 게임 상태를 먼저 비활성화
+            isGameActive = false;
+            
+            // ⭐ MiniGameUI가 파괴되기 전에 직접 정리
+            try
+            {
+                if (OnGameCompleted != null) 
+                {
+                    Debug.Log("[HeartGazeMiniGame] 게임 완료 이벤트 발생 (OnDisable)");
+                    OnGameCompleted.Invoke(false, heartsCollected);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[HeartGazeMiniGame] OnDisable에서 이벤트 호출 중 에러 (무시됨): {e.Message}");
+            }
         }
         
-        // 코루틴 중지
+        // 코루틴 중지 (모든 하트 수명 코루틴 포함)
         StopAllCoroutines();
         
-        // 모든 하트 오브젝트 정리
+        // ⭐ 모든 하트 오브젝트 강제 정리
         ClearAllHearts();
+        
+        Debug.Log("[HeartGazeMiniGame] OnDisable 정리 완료");
     }
     
     // 외부 이벤트
