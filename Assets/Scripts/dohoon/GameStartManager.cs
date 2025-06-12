@@ -141,7 +141,7 @@ public class GameStartManager : MonoBehaviour
     private void Update()
     {
         // VR 컨트롤러 버튼 입력 확인 (A 버튼 등)
-        if (!gameStarted && Input.GetKeyDown(KeyCode.A))
+        if (!gameStarted && OVRInput.GetDown(OVRInput.Button.One))
         {
             Debug.Log("A 키 입력 감지! 게임 시작됨");
             OnStartButtonClicked();

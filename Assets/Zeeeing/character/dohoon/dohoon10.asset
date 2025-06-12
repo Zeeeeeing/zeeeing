@@ -1,0 +1,122 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf0481c4103eab84b962573eeab74094, type: 3}
+  m_Name: dohoon10
+  m_EditorClassIdentifier: 
+  outfits:
+  - type: 10
+    outfit: {fileID: 2444276772279639206, guid: bc6bc6261b918134c8bfba83a161e410, type: 3}
+    colors:
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 6
+    outfit: {fileID: 766581213624642038, guid: 8460014e5392d2a48aa1a3a0c3185a4f, type: 3}
+    colors:
+    - {r: 0.30006748, g: 0.21084818, b: 0.21084818, a: 1}
+    - {r: 0.60784316, g: 0.38823524, b: 0.16862738, a: 1}
+    - {r: 0.6084906, g: 0.3895201, b: 0.16934401, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 5
+    outfit: {fileID: 8145735076867769422, guid: c8b15633723453e469f16cf4ca74ce77, type: 3}
+    colors:
+    - {r: 0.72327036, g: 0.72327036, b: 0.72327036, a: 1}
+    - {r: 0.7610062, g: 0.67056143, b: 0.57673734, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 4
+    outfit: {fileID: 7721510695042485545, guid: 1751395dd673d6d47a4e10e370ab4fe7, type: 3}
+    colors:
+    - {r: 1, g: 1, b: 1, a: 1}
+    - {r: 0.8616352, g: 0.27459663, b: 0.25740662, a: 1}
+    - {r: 0.22536674, g: 0.24084151, b: 0.33333325, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 3
+    outfit: {fileID: 3295330595454751173, guid: b9ea11b684fd6bc469237a72c76987d7, type: 3}
+    colors:
+    - {r: 0.25882345, g: 0.25882345, b: 0.25882345, a: 1}
+    - {r: 0, g: 0, b: 0, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 8
+    outfit: {fileID: 5950364436646379164, guid: b61584bae4e43dc4eacd16c8bd863954, type: 3}
+    colors:
+    - {r: 0.836478, g: 0.24989107, b: 0.24989107, a: 0}
+    - {r: 0.8113207, g: 0.8113207, b: 0.8113207, a: 0}
+    - {r: 0.8352941, g: 0.25098038, b: 0.25098038, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 2
+    outfit: {fileID: 4976703536418959356, guid: 4d44d738aa4b37145be31f3876215b1f, type: 3}
+    colors:
+    - {r: 0.25882345, g: 0.25882345, b: 0.25882345, a: 1}
+    - {r: 0.25882348, g: 0.25882348, b: 0.25882348, a: 1}
+    - {r: 0.145098, g: 0.145098, b: 0.145098, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  - type: 0
+    outfit: {fileID: 2925865511252535904, guid: bc78795fef598724ca744a2e11032462, type: 3}
+    colors:
+    - {r: 0.2075471, g: 0.2075471, b: 0.2075471, a: 1}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+    - {r: 0, g: 0, b: 0, a: 0}
+  SkinColor:
+  - {r: 0.5162836, g: 0.3627766, b: 0.3627766, a: 1}
+  - {r: 0.64601344, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0.22641495, g: 0.22641495, b: 0.22641495, a: 1}
+  - {r: 0.21960774, g: 0.21960774, b: 0.21960774, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  EyeColor:
+  - {r: 1, g: 0.2098889, b: 0, a: 1}
+  - {r: 0.08235294, g: 0.011199444, b: 0, a: 1}
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  skinAccessory: {fileID: 0}
+  Gender: 0
+  ChestSize: 0
+  FaceShape: 0
+  height: 0
+  headSize: 0
+  shoulderWidth: 0
+  LashLength: 0
+  BrowSize: 0
+  EarTipLength: 0
+  EyeSocketPosition: {x: 0, y: 0, z: 0}
+  EyeSocketRotation: 0
+  EyeSocketScale: {x: 1, y: 1, z: 1}
+  EyeUp: 0
+  EyeDown: 0
+  EyeSquare: 0
+  NoseWidth: 0
+  NoseUp: 0
+  NoseDown: 53.782845
+  NoseBridgeAngle: 97.863625
+  MouthWide: 0
+  MouthThin: 0
+  pupilSize: 2.62
+  irisSize: 1.18
+  outerIrisColorSharpness: 0.5
+  innerIrisColorShapness: 0
+  innerIrisColorOffset: {x: 0, y: -0.12}

@@ -293,6 +293,15 @@ namespace ZeeeingGaze
                 // null 체크 (안전)
                 if (data == null || data.trans == null) continue;
                 
+                // ⭐ 추가 안전장치: Y축이 너무 낮아지면 초기 Y로 복구
+                if (data.trans.position.y < data.initialY - 2f)
+                {
+                    // Debug.LogWarning($"[FollowerManager] {data.npcController.GetName()}이(가) 바닥 아래로 떨어짐! Y축 복구: {data.trans.position.y} → {data.initialY}");
+                    Vector3 recoveryPos = data.trans.position;
+                    recoveryPos.y = data.initialY;
+                    data.trans.position = recoveryPos;
+                }
+                
                 // 플레이어 뒤 (i+1)*followDistance 위치 계산 (XZ)
                 Vector3 basePos = player.position - player.forward * (followDistance * (i + 1));
                 Vector3 targetPos = new Vector3(
@@ -303,12 +312,17 @@ namespace ZeeeingGaze
                 
                 try
                 {
-                    // 부드러운 이동
-                    data.trans.position = Vector3.MoveTowards(
-                        data.trans.position,
+                    // ⭐ 수정: Y축은 항상 고정, XZ만 부드럽게 이동
+                    Vector3 currentPos = data.trans.position;
+                    Vector3 newPos = Vector3.MoveTowards(
+                        new Vector3(currentPos.x, data.initialY, currentPos.z), // 현재 위치의 Y를 초기 Y로 강제 설정
                         targetPos,
                         moveSpeed * Time.deltaTime
                     );
+                    
+                    // Y축 재차 확인
+                    newPos.y = data.initialY;
+                    data.trans.position = newPos;
                     
                     // 플레이어 바라보며 부드럽게 회전
                     Vector3 lookDirection = player.position - data.trans.position;

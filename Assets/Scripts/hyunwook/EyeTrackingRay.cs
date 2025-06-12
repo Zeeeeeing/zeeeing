@@ -15,40 +15,49 @@ namespace ZeeeingGaze
         [SerializeField] private float rayUpdateInterval = 0.033f; // 30fps
         
         [Header("Gaze Detection")]
-        [SerializeField] private float gazeAngleTolerance = 5.0f;
         [SerializeField] private float minDetectionDistance = 0.1f;
         [SerializeField] private float maxDetectionDistance = 6.0f;
         [SerializeField] private float gazeStabilityTime = 0.2f;
         
-        [Header("Close Range Settings")]
-        [SerializeField] private bool allowCloseRangeDetection = true;
-        [SerializeField] private float closeRangeThreshold = 1.0f;
-        [SerializeField] private float closeRangeAngleTolerance = 12.0f;
+        // 🔥 Angle 관련 모든 변수 제거!
+        // [SerializeField] private float gazeAngleTolerance = 25.0f; // 삭제
+        // [SerializeField] private float closeRangeAngleTolerance = 35.0f; // 삭제
+        // [SerializeField] private bool allowCloseRangeDetection = true; // 삭제
+        // [SerializeField] private float closeRangeThreshold = 1.0f; // 삭제
+        // [SerializeField] private float hysteresisAngle = 1.0f; // 삭제
         
         [Header("Stability Settings - Anti-Flicker")]
         [SerializeField] private float hoverStateChangeDelay = 0.1f;
         [SerializeField] private float consistentDetectionTime = 0.15f;
         [SerializeField] private int requiredConsistentFrames = 3;
-        [SerializeField] private float hysteresisAngle = 1.0f;
         
         [Header("Rendering - Contact Only")]
         [SerializeField] private bool useVFXLaser = true;
         [SerializeField] private bool showDefaultRay = false;
-        [SerializeField] private float laserDuration = 0.1f; // 매우 짧은 레이저 지속시간
+        [SerializeField] private float laserDuration = 0.1f;
         [SerializeField] private Color defaultLaserColor = Color.white;
+        
+        [Header("Basic Raycast Settings")]
+        [SerializeField] private Color basicRaycastColor = Color.red;
+        [SerializeField] private float basicRaycastWidth = 0.01f;
+        [SerializeField] private float basicRaycastDuration = 0.1f;
+        
+        [Header("VFX Cooldown Settings")]
+        [SerializeField] private float vfxCooldownTime = 0.1f; // 👈 쿨다운 조정 가능!
         
         [Header("Performance")]
         [SerializeField] private bool useRayCastAll = false;
         [SerializeField] private bool autoCleanupInteractables = true;
         
         [Header("Debug")]
-        [SerializeField] private bool debugMode = false;
+        [SerializeField] private bool debugMode = true;
         [SerializeField] private bool showGazeGizmos = true;
         
         private LineRenderer lineRenderer;
         private HashSet<EyeInteractable> eyeInteractables = new HashSet<EyeInteractable>();
         private float nextRaycastTime = 0f;
         private RaycastHit[] hitResults = new RaycastHit[10];
+        private Dictionary<GameObject, float> lastVFXRequestTime = new Dictionary<GameObject, float>(); // 👈 로컬 쿨다운
         
         // 안정화를 위한 변수들
         private EyeInteractable currentTargetInteractable;
@@ -75,15 +84,21 @@ namespace ZeeeingGaze
         
         private void SetupRay()
         {
-            lineRenderer.useWorldSpace = false;
+            lineRenderer.useWorldSpace = true;
             lineRenderer.positionCount = 2;
-            lineRenderer.startWidth = 0.003f;
-            lineRenderer.endWidth = 0.001f;
+            lineRenderer.startWidth = basicRaycastWidth;
+            lineRenderer.endWidth = basicRaycastWidth * 0.5f;
             lineRenderer.SetPosition(0, Vector3.zero);
-            lineRenderer.SetPosition(1, new Vector3(0, 0, rayDistance));
+            lineRenderer.SetPosition(1, Vector3.forward * rayDistance);
             
-            lineRenderer.enabled = showDefaultRay;
+            // 기본적으로 비활성화
+            lineRenderer.enabled = false;
             nextRaycastTime = Time.time;
+            
+            if (debugMode)
+            {
+                Debug.Log("[EyeTrackingRay] LineRenderer 설정 완료 - Angle 체크 없음!");
+            }
         }
         
         private void Update()
@@ -131,20 +146,69 @@ namespace ZeeeingGaze
             // 레이캐스트 수행
             if (Physics.Raycast(ray, out hit, rayDistance, layersToInclude, triggerInteraction))
             {
+                Debug.Log($"🎯 [레이캐스트 성공] {hit.transform.name}, 거리: {hit.distance:F2}m");
+                
+                // 1단계: 거리 체크
                 if (IsValidDetectionDistance(hit.distance))
                 {
+                    Debug.Log($"✅ [거리 체크 통과] {hit.distance:F2}m");
+                    
+                    // 2단계: EyeInteractable 체크
                     var eyeInteractable = hit.transform.GetComponent<EyeInteractable>();
-                    if (eyeInteractable != null && IsWithinStableGazeAngle(hit.point, hit.distance))
+                    if (eyeInteractable != null)
                     {
-                        detectedInteractable = eyeInteractable;
+                        Debug.Log($"✅ [EyeInteractable 발견] {eyeInteractable.gameObject.name}");
                         
-                        // 핵심: 실제로 EyeInteractable과 접촉하고 있을 때만 레이저 생성
-                        if (useVFXLaser)
+                        // 3단계: NPCEmotionController 체크
+                        NPCEmotionController npcController = eyeInteractable.GetComponent<NPCEmotionController>();
+                        if (npcController == null)
                         {
-                            CreateInstantLaser(hit.point);
+                            npcController = eyeInteractable.GetComponentInParent<NPCEmotionController>();
+                            if (npcController != null)
+                            {
+                                Debug.Log($"✅ [상위에서 NPC 발견] {npcController.gameObject.name}");
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log($"✅ [직접 NPC 발견] {npcController.gameObject.name}");
+                        }
+                        
+                        if (npcController != null)
+                        {
+                            detectedInteractable = eyeInteractable;
+                            
+                            // 4단계: useVFXLaser 체크
+                            Debug.Log($"🔍 [VFX 설정 체크] useVFXLaser: {useVFXLaser}");
+                            
+                            if (useVFXLaser)
+                            {
+                                Debug.Log($"🚀 [HandleImmediateEyeContact 호출] {eyeInteractable.gameObject.name}");
+                                HandleImmediateEyeContact(detectedInteractable, hit.point);
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"❌ [VFX 비활성화] useVFXLaser가 false입니다!");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"❌ [NPC 없음] {eyeInteractable.gameObject.name}에 NPCEmotionController가 없습니다!");
                         }
                     }
+                    else
+                    {
+                        Debug.LogWarning($"❌ [EyeInteractable 없음] {hit.transform.name}");
+                    }
                 }
+                else
+                {
+                    Debug.LogWarning($"❌ [거리 체크 실패] {hit.distance:F2}m (허용: {minDetectionDistance}~{maxDetectionDistance})");
+                }
+            }
+            else
+            {
+                Debug.Log("❌ [레이캐스트 미스]");
             }
             
             // 감지된 인터랙터블 처리
@@ -160,7 +224,12 @@ namespace ZeeeingGaze
             
             int hitCount = Physics.RaycastNonAlloc(ray, hitResults, rayDistance, layersToInclude, triggerInteraction);
             EyeInteractable detectedInteractable = null;
-            Vector3 hitPoint = Vector3.zero;
+            Vector3 closestHitPoint = Vector3.zero;
+            
+            if (debugMode)
+            {
+                Debug.Log($"[EyeTrackingRay] 멀티 레이캐스트: {hitCount}개 객체 감지");
+            }
             
             if (hitCount > 0)
             {
@@ -176,72 +245,198 @@ namespace ZeeeingGaze
                     var eyeInteractable = hitResults[i].transform.GetComponent<EyeInteractable>();
                     if (eyeInteractable != null && distance < closestDistance)
                     {
-                        if (IsWithinStableGazeAngle(hitResults[i].point, distance))
+                        // NPCEmotionController 찾기
+                        NPCEmotionController npcController = eyeInteractable.GetComponent<NPCEmotionController>();
+                        if (npcController == null)
+                        {
+                            npcController = eyeInteractable.GetComponentInParent<NPCEmotionController>();
+                        }
+                        
+                        if (npcController != null)
                         {
                             closestDistance = distance;
                             detectedInteractable = eyeInteractable;
-                            hitPoint = hitResults[i].point;
+                            closestHitPoint = hitResults[i].point;
                         }
                     }
                 }
                 
-                // 핵심: 실제로 EyeInteractable과 접촉하고 있을 때만 레이저 생성
+                // 🔥 Angle 체크 없이 바로 VFX 처리
                 if (detectedInteractable != null && useVFXLaser)
                 {
-                    CreateInstantLaser(hitPoint);
+                    HandleImmediateEyeContact(detectedInteractable, closestHitPoint);
                 }
             }
             
             ProcessDetectedInteractable(detectedInteractable);
         }
         
-        // 새로운 메서드: 즉시 레이저 생성 (접촉 시에만)
-        private void CreateInstantLaser(Vector3 targetPosition)
+        // 🔥 완전 디버깅 + 로컬 쿨다운 적용 버전
+        private void HandleImmediateEyeContact(EyeInteractable targetInteractable, Vector3 hitPoint)
         {
-            if (EmotionGazeManager.Instance == null || !EmotionGazeManager.Instance.HasDefaultVFXAsset())
-                return;
-                
-            Camera playerCamera = Camera.main;
-            if (playerCamera == null) return;
+            Debug.Log($"🎯🎯🎯 [HandleImmediateEyeContact 진입!] {targetInteractable?.gameObject.name ?? "null"}");
             
-            Vector3 startPos = playerCamera.transform.position + playerCamera.transform.forward * 0.1f;
-            
-            try
+            if (targetInteractable == null) 
             {
-                // 매우 짧은 지속시간의 레이저 생성
-                GameObject laserVFX = EmotionGazeManager.Instance.CreateGazeLaser(startPos, targetPosition, defaultLaserColor);
-                
-                if (laserVFX != null)
+                Debug.LogError("❌ targetInteractable이 null!");
+                return;
+            }
+            
+            // NPCEmotionController 찾기
+            NPCEmotionController npcController = targetInteractable.GetComponent<NPCEmotionController>();
+            if (npcController == null)
+            {
+                npcController = targetInteractable.GetComponentInParent<NPCEmotionController>();
+            }
+            
+            if (npcController == null) 
+            {
+                Debug.LogError($"❌ NPCEmotionController 없음: {targetInteractable.gameObject.name}");
+                return;
+            }
+            
+            Debug.Log($"✅ NPC 발견: {npcController.gameObject.name}");
+            
+            // 로컬 쿨다운 체크
+            if (lastVFXRequestTime.TryGetValue(npcController.gameObject, out float lastTime))
+            {
+                float timeSinceLastRequest = Time.time - lastTime;
+                if (timeSinceLastRequest < vfxCooldownTime)
                 {
-                    // 매우 짧은 시간 후 자동 제거
-                    Destroy(laserVFX, laserDuration);
-                    
-                    if (debugMode)
-                    {
-                        Debug.Log($"즉시 레이저 생성됨 - 지속시간: {laserDuration}초");
-                    }
+                    Debug.LogWarning($"⏰ VFX 쿨다운 중: {timeSinceLastRequest:F2}초 < {vfxCooldownTime}초");
+                    return;
                 }
             }
-            catch (System.Exception e)
+            
+            Debug.Log($"✅ 쿨다운 통과");
+            
+            // 쿨다운 시간 기록
+            lastVFXRequestTime[npcController.gameObject] = Time.time;
+            
+            // EmotionGazeManager 확인
+            if (EmotionGazeManager.Instance == null)
             {
-                if (debugMode) Debug.LogError($"즉시 레이저 생성 중 오류: {e.Message}");
+                Debug.LogError("❌ EmotionGazeManager.Instance가 null!");
+                return;
             }
+            
+            Debug.Log($"✅ EmotionGazeManager 존재");
+            
+            // PlayerEmotionController 확인
+            PlayerEmotionController playerController = EmotionGazeManager.Instance.GetPlayerEmotionController();
+            if (playerController == null)
+            {
+                Debug.LogError("❌ PlayerEmotionController가 null!");
+                return;
+            }
+            
+            Debug.Log($"✅ PlayerEmotionController 존재");
+            
+            // 감정 비교
+            EmotionState playerEmotion = playerController.GetCurrentEmotion();
+            EmotionState npcEmotion = npcController.GetCurrentEmotion();
+            bool emotionMatched = playerEmotion == npcEmotion;
+            
+            Debug.Log($"🔍 감정 비교: 플레이어({playerEmotion}) vs NPC({npcEmotion}) = {emotionMatched}");
+            
+            if (emotionMatched)
+            {
+                Debug.Log($"💖 감정 일치! VFX 요청 전송...");
+                
+                EmotionEventData eventData = new EmotionEventData(
+                    npcController.GetCurrentEmotion(),
+                    1.0f,
+                    npcController.gameObject
+                );
+                
+                EmotionGazeManager.Instance.HandleEyeGazeEvent(eventData);
+                
+                Debug.Log($"🚀 VFX 요청 완료!");
+            }
+            else
+            {
+                Debug.Log($"😔 감정 불일치! 기본 raycast 표시...");
+                ShowBasicRaycast(hitPoint);
+                Debug.Log($"📍 기본 raycast 표시 완료!");
+            }
+        }
+        
+        // 🔥 기본 raycast 표시
+        private void ShowBasicRaycast(Vector3 targetPoint)
+        {
+            if (lineRenderer == null) return;
+            
+            // LineRenderer 활성화 및 설정
+            lineRenderer.enabled = true;
+            lineRenderer.useWorldSpace = true;
+            lineRenderer.positionCount = 2;
+            
+            // 시작점과 끝점 설정
+            Vector3 startPoint = transform.position;
+            lineRenderer.SetPosition(0, startPoint);
+            lineRenderer.SetPosition(1, targetPoint);
+            
+            // 스타일 설정
+            lineRenderer.startWidth = basicRaycastWidth;
+            lineRenderer.endWidth = basicRaycastWidth * 0.5f;
+            
+            // 머티리얼 설정
+            if (lineRenderer.material == null || lineRenderer.material.name.Contains("Default"))
+            {
+                lineRenderer.material = new Material(Shader.Find("Unlit/Color"));
+                lineRenderer.material.color = basicRaycastColor;
+            }
+            
+            // 일정 시간 후 자동으로 숨기기
+            StopCoroutine(nameof(HideBasicRaycastAfterDelay));
+            StartCoroutine(HideBasicRaycastAfterDelay(basicRaycastDuration));
+            
+            if (debugMode)
+            {
+                Debug.Log($"[EyeTrackingRay] 기본 raycast 표시: {startPoint} → {targetPoint}");
+            }
+        }
+        
+        private IEnumerator HideBasicRaycastAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            
+            if (lineRenderer != null)
+            {
+                lineRenderer.enabled = false;
+            }
+        }
+        
+        private bool IsValidDetectionDistance(float distance)
+        {
+            bool valid = distance >= minDetectionDistance && distance <= maxDetectionDistance;
+            
+            if (debugMode)
+            {
+                if (valid)
+                {
+                    Debug.Log($"✅ [거리 유효] {distance:F2}m (범위: {minDetectionDistance:F2}~{maxDetectionDistance:F2})");
+                }
+                else
+                {
+                    Debug.LogWarning($"❌ [거리 무효] {distance:F2}m (범위: {minDetectionDistance:F2}~{maxDetectionDistance:F2})");
+                }
+            }
+            
+            return valid;
         }
         
         private void ProcessDetectedInteractable(EyeInteractable detected)
         {
-            // 현재 감지된 것이 이전과 같으면 안정성 증가
             if (detected == currentTargetInteractable)
             {
                 if (detected != null)
                 {
-                    // 일관된 감지 카운트 증가
                     if (!consistentDetectionCounts.ContainsKey(detected))
                         consistentDetectionCounts[detected] = 0;
                     
                     consistentDetectionCounts[detected]++;
                     
-                    // 충분히 일관되게 감지되면 안정된 것으로 간주
                     if (consistentDetectionCounts[detected] >= requiredConsistentFrames)
                     {
                         SetPendingInteractable(detected);
@@ -250,7 +445,6 @@ namespace ZeeeingGaze
             }
             else
             {
-                // 다른 것이 감지되면 카운트 리셋
                 currentTargetInteractable = detected;
                 consistentDetectionCounts.Clear();
                 
@@ -270,20 +464,18 @@ namespace ZeeeingGaze
                 
                 if (debugMode)
                 {
-                    Debug.Log($"대기 인터랙터블 설정: {(interactable?.gameObject.name ?? "None")}");
+                    Debug.Log($"[EyeTrackingRay] 대기 인터랙터블 설정: {(interactable?.gameObject.name ?? "None")}");
                 }
             }
         }
         
         private void ProcessStabilityLogic()
         {
-            // 대기 중인 인터랙터블이 있고 충분한 시간이 지났으면 활성화
             if (pendingInteractable != null && 
                 Time.time - pendingStartTime >= consistentDetectionTime)
             {
                 if (lastStableInteractable != pendingInteractable)
                 {
-                    // 상태 변경 지연 체크
                     if (Time.time - lastInteractableChangeTime >= hoverStateChangeDelay)
                     {
                         ChangeActiveInteractable(pendingInteractable);
@@ -292,7 +484,6 @@ namespace ZeeeingGaze
                 }
             }
             
-            // 아무것도 감지되지 않으면 현재 활성화된 것 해제
             if (currentTargetInteractable == null && 
                 Time.time - lastInteractableChangeTime >= hoverStateChangeDelay)
             {
@@ -306,7 +497,6 @@ namespace ZeeeingGaze
         
         private void ChangeActiveInteractable(EyeInteractable newInteractable)
         {
-            // 이전 인터랙터블 비활성화
             if (lastStableInteractable != null)
             {
                 lastStableInteractable.IsHovered = false;
@@ -314,11 +504,10 @@ namespace ZeeeingGaze
                 
                 if (debugMode)
                 {
-                    Debug.Log($"인터랙터블 비활성화: {lastStableInteractable.gameObject.name}");
+                    Debug.Log($"[EyeTrackingRay] 인터랙터블 비활성화: {lastStableInteractable.gameObject.name}");
                 }
             }
             
-            // 새 인터랙터블 활성화
             if (newInteractable != null)
             {
                 newInteractable.IsHovered = true;
@@ -327,61 +516,18 @@ namespace ZeeeingGaze
                 if (debugMode)
                 {
                     float distance = Vector3.Distance(transform.position, newInteractable.transform.position);
-                    Debug.Log($"인터랙터블 활성화: {newInteractable.gameObject.name} (거리: {distance:F2}m)");
+                    Debug.Log($"[EyeTrackingRay] 인터랙터블 활성화: {newInteractable.gameObject.name} (거리: {distance:F2}m)");
                 }
             }
             
             lastStableInteractable = newInteractable;
         }
         
-        private bool IsValidDetectionDistance(float distance)
-        {
-            return distance >= minDetectionDistance && distance <= maxDetectionDistance;
-        }
-        
-        private bool IsWithinStableGazeAngle(Vector3 hitPoint, float distance)
-        {
-            Vector3 directionToHit = (hitPoint - transform.position).normalized;
-            Vector3 gazeDirection = transform.forward;
-            float angle = Vector3.Angle(gazeDirection, directionToHit);
-            
-            // 기본 허용 각도 계산
-            float baseAllowedAngle = distance <= closeRangeThreshold ? 
-                closeRangeAngleTolerance : gazeAngleTolerance;
-            
-            // 히스테리시스 적용 (현재 활성화된 인터랙터블에 더 관대)
-            float allowedAngle = baseAllowedAngle;
-            Collider[] hitColliders = Physics.OverlapSphere(hitPoint, 0.1f, layersToInclude);
-            EyeInteractable hitInteractable = null;
-            
-            if (hitColliders.Length > 0)
-            {
-                hitInteractable = hitColliders[0].GetComponent<EyeInteractable>();
-            }
-            
-            // 현재 활성화된 인터랙터블이면 히스테리시스 적용
-            if (hitInteractable == lastStableInteractable)
-            {
-                allowedAngle += hysteresisAngle;
-            }
-            
-            bool withinAngle = angle <= allowedAngle;
-            
-            if (debugMode && !withinAngle)
-            {
-                Debug.Log($"각도 초과: {angle:F2}도 > {allowedAngle:F2}도 (거리: {distance:F2}m)");
-            }
-            
-            return withinAngle;
-        }
-        
         private void CleanUpInactiveInteractables()
         {
-            // 비활성화된 인터랙터블 제거
             eyeInteractables.RemoveWhere(interactable => 
                 interactable == null || !interactable.gameObject.activeInHierarchy);
             
-            // 오래된 감지 시간 정보 정리
             var keysToRemove = new List<EyeInteractable>();
             foreach (var kvp in interactableDetectionTimes)
             {
@@ -400,7 +546,6 @@ namespace ZeeeingGaze
         
         private void OnDisable()
         {
-            // 모든 상태 초기화
             if (lastStableInteractable != null)
             {
                 lastStableInteractable.IsHovered = false;
@@ -415,7 +560,6 @@ namespace ZeeeingGaze
             OnDisable();
         }
         
-        // 디버그용 기즈모
         private void OnDrawGizmos()
         {
             if (!showGazeGizmos) return;
@@ -431,13 +575,6 @@ namespace ZeeeingGaze
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position + transform.forward * maxDetectionDistance, 0.1f);
             
-            // 근거리 범위 표시
-            if (allowCloseRangeDetection)
-            {
-                Gizmos.color = Color.cyan;
-                Gizmos.DrawWireSphere(transform.position + transform.forward * closeRangeThreshold, 0.05f);
-            }
-            
             // 현재 활성화된 인터랙터블 표시
             if (lastStableInteractable != null)
             {
@@ -448,13 +585,6 @@ namespace ZeeeingGaze
         }
         
         #region Public Methods
-        public void SetStabilitySettings(float changeDelay, float detectionTime, int requiredFrames)
-        {
-            hoverStateChangeDelay = Mathf.Max(0.05f, changeDelay);
-            consistentDetectionTime = Mathf.Max(0.1f, detectionTime);
-            requiredConsistentFrames = Mathf.Max(1, requiredFrames);
-        }
-        
         public EyeInteractable GetCurrentActiveInteractable()
         {
             return lastStableInteractable;
@@ -472,22 +602,24 @@ namespace ZeeeingGaze
             maxDetectionDistance = Mathf.Max(minDetectionDistance + 0.1f, maxDistance);
         }
         
-        public void SetGazeAngleTolerance(float angle)
+        [ContextMenu("Test: Show Basic Raycast")]
+        public void TestShowBasicRaycast()
         {
-            gazeAngleTolerance = Mathf.Clamp(angle, 0.1f, 45f);
+            Vector3 testTarget = transform.position + transform.forward * 3f;
+            ShowBasicRaycast(testTarget);
+            Debug.Log("기본 raycast 테스트 - 3m 앞으로 raycast 표시");
         }
         
-        public void SetCloseRangeSettings(bool allowCloseRange, float threshold, float angleTolerance)
+        [ContextMenu("Debug: Check Current Settings")]
+        public void DebugCheckCurrentSettings()
         {
-            allowCloseRangeDetection = allowCloseRange;
-            closeRangeThreshold = Mathf.Max(0.1f, threshold);
-            closeRangeAngleTolerance = Mathf.Clamp(angleTolerance, 0.1f, 45f);
-        }
-        
-        public void SetLaserDuration(float duration)
-        {
-            laserDuration = Mathf.Max(0.05f, duration);
-            Debug.Log($"레이저 지속시간 설정: {laserDuration}초");
+            Debug.Log("=== EyeTrackingRay 설정 확인 ===");
+            Debug.Log($"VFX 쿨다운: {vfxCooldownTime}초");
+            Debug.Log($"기본 raycast 지속시간: {basicRaycastDuration}초");
+            Debug.Log($"거리 범위: {minDetectionDistance}m ~ {maxDetectionDistance}m");
+            Debug.Log($"Angle 체크: 완전 제거됨! ✅");
+            Debug.Log($"디버그 모드: {debugMode}");
+            Debug.Log($"VFX 레이저 사용: {useVFXLaser}");
         }
         #endregion
     }
