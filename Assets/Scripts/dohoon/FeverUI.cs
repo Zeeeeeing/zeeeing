@@ -25,8 +25,8 @@ public class FeverUI : MonoBehaviour
     [SerializeField] private Vector3 particleOffset = new Vector3(0, 0.5f, 0); // 파티클 위치 오프셋
     
     [Header("Animation Settings")]
-    [SerializeField] private float pulseSpeed = 2f;
-    [SerializeField] private float pulseIntensity = 0.3f;
+    [SerializeField] private float pulseSpeed = 0.0f;
+    [SerializeField] private float pulseIntensity = 0.0f;
     [SerializeField] private AnimationCurve pulseCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     
     [Header("Audio")]
