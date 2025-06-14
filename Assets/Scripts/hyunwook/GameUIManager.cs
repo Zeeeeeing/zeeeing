@@ -373,12 +373,54 @@ public class GameUIManager : MonoBehaviour
         if (neutralButton != null && playerEmotionController != null)
             neutralButton.onClick.AddListener(() => playerEmotionController.ForceSetEmotion(EmotionState.Neutral));
             
-        // 미니게임 버튼 이벤트 연결 (Chase 버튼 제거)
+        // 미니게임 버튼 이벤트 연결 (API 수정)
         if (colorGameButton != null && miniGameManager != null)
-            colorGameButton.onClick.AddListener(() => miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.ColorGaze));
+        {
+            colorGameButton.onClick.AddListener(() =>
+            {
+                // 디버그용으로 씬에 있는 임의의 NPC를 찾습니다.
+                NPCController targetNPC;
+                #if UNITY_2023_1_OR_NEWER
+                    targetNPC = FindAnyObjectByType<NPCController>();
+                #else
+                    targetNPC = FindObjectOfType<NPCController>();
+                #endif
+
+                if (targetNPC != null && !targetNPC.IsSeduced())
+                {
+                    // 기본 난이도 1과 찾은 NPC를 인자로 전달합니다.
+                    miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.ColorGaze, 1, targetNPC);
+                }
+                else
+                {
+                    Debug.LogWarning("미니게임을 시작할 수 있는 NPC를 찾을 수 없습니다.");
+                }
+            });
+        }
             
         if (heartGameButton != null && miniGameManager != null)
-            heartGameButton.onClick.AddListener(() => miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.HeartGaze));
+        {
+            heartGameButton.onClick.AddListener(() =>
+            {
+                // 디버그용으로 씬에 있는 임의의 NPC를 찾습니다.
+                NPCController targetNPC;
+                #if UNITY_2023_1_OR_NEWER
+                    targetNPC = FindAnyObjectByType<NPCController>();
+                #else
+                    targetNPC = FindObjectOfType<NPCController>();
+                #endif
+
+                if (targetNPC != null && !targetNPC.IsSeduced())
+                {
+                    // 기본 난이도 1과 찾은 NPC를 인자로 전달합니다.
+                    miniGameManager.StartMiniGame(MiniGameManager.MiniGameType.HeartGaze, 1, targetNPC);
+                }
+                else
+                {
+                    Debug.LogWarning("미니게임을 시작할 수 있는 NPC를 찾을 수 없습니다.");
+                }
+            });
+        }
         
         Debug.Log("디버그 버튼 설정 완료 (2개 미니게임 모드)");
     }

@@ -38,6 +38,7 @@ public class MiniGameManager : MonoBehaviour
     // 게임 상태 변수
     private int totalScore = 0;
     private bool isFeverModeActive = false;
+    private NPCController currentTargetNPC;
 
     // 현재 진행 중인 미니게임
     private enum ActiveMiniGame { None, ColorGaze, HeartGaze }
@@ -460,15 +461,14 @@ public class MiniGameManager : MonoBehaviour
 
         if (success)
         {
-            // ⭐ 미니게임 자체 퍼포먼스 점수 (피버모드 배율 자동 적용됨)
             int gameScore = baseScorePerSuccess * matchCount;
             AddScore(gameScore, "ColorGame_Performance");
-
-            // NPC 꼬시기 성공 처리 (NPCController에서 피버모드 배율 적용됨)
-            HandleMiniGameSuccess(MiniGameType.ColorGaze);
+            HandleMiniGameSuccess();
         }
+        
+        // 성공/실패와 관계없이 타겟 NPC 초기화
+        currentTargetNPC = null; 
 
-        // 게임 완료 이벤트 발생
         OnGameCompleted?.Invoke(success, matchCount);
     }
 
@@ -480,16 +480,34 @@ public class MiniGameManager : MonoBehaviour
 
         if (success)
         {
-            // ⭐ 미니게임 자체 퍼포먼스 점수 (피버모드 배율 자동 적용됨)
             int gameScore = baseScorePerSuccess * heartsCount;
             AddScore(gameScore, "HeartGame_Performance");
-
-            // NPC 꼬시기 성공 처리 (NPCController에서 피버모드 배율 적용됨)
-            HandleMiniGameSuccess(MiniGameType.HeartGaze);
+            HandleMiniGameSuccess();
         }
 
-        // 게임 완료 이벤트 발생
+        // 성공/실패와 관계없이 타겟 NPC 초기화
+        currentTargetNPC = null;
+        
         OnGameCompleted?.Invoke(success, heartsCount);
+    }
+
+    // 현재 실행 중인 미니게임 중지 (수정됨)
+    public void StopCurrentMiniGame()
+    {
+        Debug.Log("현재 미니게임 중지 요청");
+
+        switch (currentMiniGame)
+        {
+            case ActiveMiniGame.ColorGaze:
+                if (colorGazeGame != null) colorGazeGame.StopGame();
+                break;
+            case ActiveMiniGame.HeartGaze:
+                if (heartGazeGame != null) heartGazeGame.StopGame();
+                break;
+        }
+
+        currentMiniGame = ActiveMiniGame.None;
+        currentTargetNPC = null; // 중지 시에도 타겟 NPC 초기화
     }
 
     // MiniGameManager.cs의 ActivateFeverMode 메서드를 다음과 같이 수정:
@@ -643,29 +661,27 @@ private void ActivateFeverMode()
         }
     }
 
-    // 미니게임 성공 보상 처리 (수정된 버전)
-    private void HandleMiniGameSuccess(MiniGameType gameType)
+    // 미니게임 성공 보상 처리
+    private void HandleMiniGameSuccess()
     {
-        NPCController npc = GetCurrentInteractingNPC();
-
-        if (npc != null)
+        if (currentTargetNPC != null)
         {
-            Debug.Log($"미니게임 성공 보상: {npc.GetName()} NPC - Elite NPC이므로 미니게임으로 꼬시기");
+            Debug.Log($"미니게임 성공 보상: {currentTargetNPC.GetName()} NPC - 저장된 NPC를 꼬십니다.");
 
             // NPC 감정 상태 변경
-            NPCEmotionController emotionController = npc.GetComponent<NPCEmotionController>();
+            NPCEmotionController emotionController = currentTargetNPC.GetComponent<NPCEmotionController>();
             if (emotionController != null)
             {
                 emotionController.ChangeEmotionState(EmotionState.Happy);
             }
 
-            // 미니게임 성공으로 NPC 꼬시기 (꼬시기 점수 + 미니게임 보너스 점수)
-            npc.SetSeducedByMiniGame();
-            npc.SetGhostMode(true);
+            // 미니게임 성공으로 NPC 꼬시기
+            currentTargetNPC.SetSeducedByMiniGame();
+            currentTargetNPC.SetGhostMode(true);
         }
         else
         {
-            Debug.LogWarning("현재 상호작용 중인 NPC가 없습니다!");
+            Debug.LogWarning("미니게임 보상을 전달할 대상 NPC가 지정되지 않았습니다!");
         }
     }
 
@@ -724,7 +740,7 @@ private void ActivateFeverMode()
     }
 
     // 미니게임 시작 메서드
-    public bool StartMiniGame(MiniGameType gameType, int difficulty = 1)
+    public bool StartMiniGame(MiniGameType gameType, int difficulty, NPCController targetNPC)
     {
         if (currentMiniGame != ActiveMiniGame.None)
         {
@@ -732,6 +748,14 @@ private void ActivateFeverMode()
             return false;
         }
 
+        if (targetNPC == null)
+        {
+            Debug.LogError("미니게임을 시작할 대상 NPC가 null입니다!");
+            return false;
+        }
+
+        // 대상 NPC 저장
+        this.currentTargetNPC = targetNPC;
         bool started = false;
 
         switch (gameType)
@@ -739,7 +763,7 @@ private void ActivateFeverMode()
             case MiniGameType.ColorGaze:
                 if (colorGazeGame != null)
                 {
-                    Debug.Log($"ColorGazeGame 시작 (난이도: {difficulty})");
+                    Debug.Log($"ColorGazeGame 시작 (대상: {targetNPC.GetName()}, 난이도: {difficulty})");
                     colorGazeGame.StartMiniGame(difficulty);
                     currentMiniGame = ActiveMiniGame.ColorGaze;
                     started = true;
@@ -753,7 +777,7 @@ private void ActivateFeverMode()
             case MiniGameType.HeartGaze:
                 if (heartGazeGame != null)
                 {
-                    Debug.Log($"HeartGazeGame 시작 (난이도: {difficulty})");
+                    Debug.Log($"HeartGazeGame 시작 (대상: {targetNPC.GetName()}, 난이도: {difficulty})");
                     heartGazeGame.StartMiniGame(difficulty);
                     currentMiniGame = ActiveMiniGame.HeartGaze;
                     started = true;
@@ -767,58 +791,15 @@ private void ActivateFeverMode()
 
         if (started)
         {
-            Debug.Log($"미니게임 시작 이벤트 발생: {gameType}");
             OnGameStarted?.Invoke(gameType);
-
-#if UNITY_2023_1_OR_NEWER
-            MiniGameUI ui = FindAnyObjectByType<MiniGameUI>();
-#else
-                MiniGameUI ui = FindObjectOfType<MiniGameUI>();
-#endif
-
-            if (ui != null)
-            {
-                Debug.Log("MiniGameUI 직접 호출 시도");
-                ui.ShowMiniGameUI(gameType);
-            }
-            else
-            {
-                Debug.LogError("MiniGameUI 컴포넌트를 찾을 수 없습니다!");
-            }
+        }
+        else
+        {
+            // 시작에 실패하면 저장했던 NPC를 초기화
+            this.currentTargetNPC = null;
         }
 
         return started;
-    }
-
-    // 현재 실행 중인 미니게임 중지
-    public void StopCurrentMiniGame()
-    {
-        Debug.Log("현재 미니게임 중지 요청");
-
-        switch (currentMiniGame)
-        {
-            case ActiveMiniGame.ColorGaze:
-                if (colorGazeGame != null)
-                {
-                    colorGazeGame.StopGame();
-                    Debug.Log("ColorGazeGame 중지됨");
-                }
-                break;
-
-            case ActiveMiniGame.HeartGaze:
-                if (heartGazeGame != null)
-                {
-                    heartGazeGame.StopGame();
-                    Debug.Log("HeartGazeGame 중지됨");
-                }
-                break;
-
-            case ActiveMiniGame.None:
-                Debug.Log("현재 실행 중인 미니게임이 없습니다");
-                break;
-        }
-
-        currentMiniGame = ActiveMiniGame.None;
     }
 
     // 현재 점수 반환 (통합!)
