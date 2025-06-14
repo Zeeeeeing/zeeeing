@@ -8,7 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/Zeeeing/Paid Asset/Map/schoolmonster 1.unity
     guid: b43fe1ef9f14ba1478172802c370cf3f
   - enabled: 0
@@ -18,22 +18,22 @@ EditorBuildSettings:
     path: Assets/TirgamesAssets/PolyWorld/Scenes/dohoon/StartScene.unity
     guid: 1fb080766d5b2aa4bb79f633d888c51e
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/C score.unity
+    path: Assets/Scenes/Hyunwook/6.08/C score.unity
     guid: 66b5c7b924c7dc144a9fe669d888e546
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/D score.unity
+    path: Assets/Scenes/Hyunwook/6.08/D score.unity
     guid: 6d784ae74b78c6440b6e427947f101aa
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/A score.unity
+    path: Assets/Scenes/Hyunwook/6.08/A score.unity
     guid: 6cb3cc266080ed54db4131b03fe97a6d
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/B score.unity
+    path: Assets/Scenes/Hyunwook/6.08/B score.unity
     guid: ba70ff3b1f55b8a419e35c58cfd6bbfd
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/S score.unity
+    path: Assets/Scenes/Hyunwook/6.08/S score.unity
     guid: 894db1996b749734db491ed5b69c5549
   - enabled: 1
-    path: Assets/Zeeeing/Paid Asset/Map/EyeTracking.unity
+    path: Assets/Scenes/Hyunwook/6.08/EyeTracking.unity
     guid: cef1ae0a2e4cbb348bc4459358297a60
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

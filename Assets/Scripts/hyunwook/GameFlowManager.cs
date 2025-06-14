@@ -390,14 +390,6 @@ public class GameFlowManager : MonoBehaviour
         {
             StartEndingPhase();
         }
-
-        // 중간 진행 상황 체크 (격려 메시지 등)
-        float progress = (float)seducedNPCCount / targetNPCCount;
-        if (progress < 0.3f && phaseTimer > gameplayTime * 0.5f)
-        {
-            // 진행이 느린 경우 힌트 메시지 표시 등
-            Debug.Log("진행이 느립니다. NPC들과 더 적극적으로 상호작용해보세요!");
-        }
     }
     #endregion
 

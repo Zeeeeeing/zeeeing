@@ -182,7 +182,7 @@ public class VRSceneTransition : MonoBehaviour
     [ContextMenu("TEST: D등급 전환")]
     public void TestDGrade()
     {
-        TransitionToScoreScene(25f);
+        TransitionToScoreScene(100f);
     }
     
     [ContextMenu("DEBUG: 상태 확인")]
