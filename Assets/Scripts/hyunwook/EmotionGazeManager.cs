@@ -226,7 +226,13 @@ namespace ZeeeingGaze
                          $"\n  - 크리티컬 히트: {isCriticalHit} (강도: {eventData.Intensity:F2} >= 임계값: {criticalHitThreshold})" +
                          $"\n  - defaultGazeVFXAsset: {(defaultGazeVFXAsset != null ? "설정됨" : "null")}");
             }
-            
+
+            // 시선 VFX 사운드 이펙트 추가
+            if (AudioHapticManager.Instance != null)
+            {
+                AudioHapticManager.Instance.PlayEyeVFXSFX();
+            }
+
             if (isCriticalHit)
             {
                 criticalHitCount++;

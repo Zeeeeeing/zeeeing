@@ -90,13 +90,13 @@ public class VRControllerRaycaster : MonoBehaviour
         // 히트 결과 로깅 (디버깅용)
         if (hitSomething)
         {
-            Debug.Log("레이가 " + hit.collider.gameObject.name + "에 닿았습니다. 거리: " + hit.distance);
+            // Debug.Log("레이가 " + hit.collider.gameObject.name + "에 닿았습니다. 거리: " + hit.distance);
             
             // 버튼 객체인지 로깅
             VRButtonInteractable interactable = hit.collider.GetComponent<VRButtonInteractable>();
             if (interactable != null)
             {
-                Debug.Log("상호작용 가능한 버튼을 감지했습니다: " + interactable.gameObject.name);
+                // Debug.Log("상호작용 가능한 버튼을 감지했습니다: " + interactable.gameObject.name);
             }
         }
         
@@ -126,7 +126,7 @@ public class VRControllerRaycaster : MonoBehaviour
                     Input.GetKeyDown(KeyCode.Space) || 
                     Input.GetMouseButtonDown(0))
                 {
-                    Debug.Log("트리거 버튼이 눌렸습니다!");
+                    // Debug.Log("트리거 버튼이 눌렸습니다!");
                     currentHitObject.OnRayTrigger();
                 }
             }
@@ -137,7 +137,7 @@ public class VRControllerRaycaster : MonoBehaviour
         {
             if (Input.GetKeyDown((KeyCode)i))
             {
-                Debug.Log("키 감지됨: " + ((KeyCode)i).ToString());
+                // Debug.Log("키 감지됨: " + ((KeyCode)i).ToString());
             }
         }
         
@@ -146,7 +146,7 @@ public class VRControllerRaycaster : MonoBehaviour
         {
             if (Input.GetKeyDown((KeyCode)i))
             {
-                Debug.Log("조이스틱 버튼 감지됨: " + ((KeyCode)i).ToString());
+                // Debug.Log("조이스틱 버튼 감지됨: " + ((KeyCode)i).ToString());
             }
         }
     }

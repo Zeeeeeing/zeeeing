@@ -35,10 +35,128 @@ public class AutonomousDriver : MonoBehaviour
 
         // 첫 목적지 설정
         PickNewDestination();
+<<<<<<< Updated upstream
+=======
+
+        Debug.Log($"[{gameObject.name}] AutonomousDriver 초기화 - 원본 속도: {originalMoveSpeed}, 회전: {originalRotationSpeed}");
+>>>>>>> Stashed changes
     }
 
     void Update()
     {
+<<<<<<< Updated upstream
+=======
+        if (isInInteractionMode)
+        {
+            HandleInteractionMode();
+        }
+        else
+        {
+            HandleNormalMovement();
+        }
+    }
+
+    // 🆕 상호작용 모드 설정/해제
+    public void SetInteractionMode(bool enable, Transform playerTransform)
+    {
+        isInInteractionMode = enable;
+        playerTarget = playerTransform;
+
+        if (enable)
+        {
+            Debug.Log($"[{gameObject.name}] 상호작용 모드 활성화 - 플레이어를 바라보며 정지");
+            Debug.Log($"  - 플레이어 위치: {playerTransform?.position}");
+            Debug.Log($"  - 현재 NPC 위치: {transform.position}");
+            Debug.Log($"  - 거리: {(playerTransform ? Vector3.Distance(transform.position, playerTransform.position) : 0):F2}m");
+
+            // 속도를 0으로 설정
+            moveSpeed = 0f;
+            
+            // 현재 이동 중단
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+        else
+        {
+            Debug.Log($"[{gameObject.name}] 상호작용 모드 해제 - 정상 이동 재개");
+
+            // 🔧 원본 속도 정확히 복원
+            moveSpeed = originalMoveSpeed;
+            rotationSpeed = originalRotationSpeed;
+
+            Debug.Log($"  - 복원된 속도: {moveSpeed} (원본: {originalMoveSpeed})");
+
+            // 이동 재개
+            agent.isStopped = false;
+            agent.speed = moveSpeed; // Agent 속도도 동기화
+            
+            // 새로운 목적지 설정
+            PickNewDestination();
+        }
+    }
+
+    // 🔧 상호작용 모드 처리 (개선된 버전)
+    private void HandleInteractionMode()
+    {
+        if (playerTarget == null) 
+        {
+            Debug.LogWarning($"[{gameObject.name}] 상호작용 모드이지만 playerTarget이 null!");
+            return;
+        }
+
+        // 플레이어 방향 계산 (Y축 무시)
+        Vector3 directionToPlayer = (playerTarget.position - transform.position);
+        directionToPlayer.y = 0f; // Y축 회전 무시
+        
+        float distanceToPlayer = directionToPlayer.magnitude;
+        
+        if (directionToPlayer.sqrMagnitude > 0.01f)
+        {
+            // 플레이어를 바라보는 회전 계산
+            Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer.normalized, Vector3.up);
+            
+            // 🔧 더 부드럽고 빠른 회전
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation,
+                targetRotation,
+                lookAtRotationSpeed * Time.deltaTime
+            );
+            
+            // 🔧 상세한 바라보기 디버그 정보
+            float currentAngle = Quaternion.Angle(transform.rotation, targetRotation);
+            if (currentAngle > 5f) // 5도 이상 차이날 때만 로그
+            {
+                Debug.Log($"[{gameObject.name}] 바라보기 중... 남은 각도: {currentAngle:F1}°, 거리: {distanceToPlayer:F2}m");
+            }
+        }
+
+        // 🔧 거리 조건 개선: enablePushBack이 활성화되어야만 뒤로 밀기
+        if (enablePushBack && distanceToPlayer < minLookAtDistance)
+        {
+            Vector3 awayFromPlayer = (transform.position - playerTarget.position).normalized;
+            Vector3 newPosition = transform.position + awayFromPlayer * Time.deltaTime * pushBackSpeed;
+            
+            // NavMesh 유효성 검사
+            if (NavMesh.SamplePosition(newPosition, out NavMeshHit hit, 1f, NavMesh.AllAreas))
+            {
+                transform.position = hit.position;
+                Debug.Log($"[{gameObject.name}] 너무 가까워서 뒤로 이동: {distanceToPlayer:F2}m → {minLookAtDistance:F2}m");
+            }
+        }
+        else if (distanceToPlayer < minLookAtDistance)
+        {
+            // 🔧 너무 가까워도 뒤로 밀지 않고 그냥 바라보기만 함
+            Debug.Log($"[{gameObject.name}] 가까운 거리에서 바라보기: {distanceToPlayer:F2}m (최소: {minLookAtDistance:F2}m)");
+        }
+
+        // Agent 위치 동기화
+        agent.nextPosition = transform.position;
+    }
+
+    // 🆕 정상 이동 모드 처리
+    private void HandleNormalMovement()
+    {
+>>>>>>> Stashed changes
         // 경로 계산 중이면 대기
         if (agent.pathPending) return;
 

@@ -21,10 +21,24 @@ public class NPCInteractionManager : MonoBehaviour
     [SerializeField] private List<NPCController> eliteNPCs;
     
     [Header("Fast Tempo Settings")]
+<<<<<<< Updated upstream
     [SerializeField] private float fastEmotionBuildupMultiplier = 2.0f; // 감정 쌓이는 속도 2배
     [SerializeField] private float regularNPCSuccessTime = 3.0f; // 감소 (기존 6.0 -> 3.0)
     [SerializeField] private float matchingEmotionBonus = 1.5f; // 감정 일치시 보너스
     
+=======
+    [SerializeField] private float fastEmotionBuildupMultiplier = 2.0f;
+    [SerializeField] private float regularNPCSuccessTime = 3.0f;
+    [SerializeField] private float matchingEmotionBonus = 1.5f;
+    [Header("Interaction Delay Settings")]
+    [SerializeField] private float interactionHoldTime = 1.0f; // 상호작용 유지 시간
+    private float interactionLostTime = 0f; // 감지 상실 시점 기록
+
+    [Header("Fever Mode Settings")]
+    [SerializeField] private float feverModeSuccessTimeMultiplier = 0.5f; // 피버 모드일 때 성공 시간 배율
+    private MiniGameManager miniGameManagerRef; // MiniGameManager 참조
+
+>>>>>>> Stashed changes
     [Header("Debug Settings")]
     [SerializeField] private bool enableDebugLogs = false;
     
@@ -35,6 +49,7 @@ public class NPCInteractionManager : MonoBehaviour
     
     // 플레이어 참조
     private Transform playerTransform;
+<<<<<<< Updated upstream
     
     private void Start()
     {
@@ -42,17 +57,46 @@ public class NPCInteractionManager : MonoBehaviour
         
         // 플레이어 감정 컨트롤러가 없으면 찾기
         if (playerEmotionController == null)
+=======
+    private Camera playerCamera;
+
+    private void Start()
+    {
+        playerTransform = Camera.main.transform;
+        playerCamera = Camera.main;
+
+        // ⭐ 추가: MiniGameManager 참조 가져오기
+        if (miniGameManagerRef == null)
         {
-            playerEmotionController = FindAnyObjectByType<PlayerEmotionController>();
-            if (playerEmotionController == null)
+            miniGameManagerRef = FindAnyObjectByType<MiniGameManager>();
+            if (miniGameManagerRef == null)
             {
-                Debug.LogWarning("PlayerEmotionController를 찾을 수 없습니다. 감정 기반 상호작용이 작동하지 않을 수 있습니다.");
+                Debug.LogWarning("MiniGameManager를 찾을 수 없습니다. 피버 모드 기능이 제한될 수 있습니다.");
             }
         }
+
+        // EyeTrackingRay 자동 찾기 및 이벤트 연결
+        if (eyeTrackingRay == null)
+        {
+            eyeTrackingRay = FindAnyObjectByType<EyeTrackingRay>();
+            if (eyeTrackingRay == null)
+            {
+                Debug.LogError("EyeTrackingRay를 찾을 수 없습니다! 카메라에 EyeTrackingRay 컴포넌트를 추가하세요.");
+            }
+        }
+
+        if (enableDebugLogs)
+>>>>>>> Stashed changes
+        {
+            Debug.Log("NPCInteractionManager 초기화 완료 (EyeTracking 전용 모드)");
+        }
+<<<<<<< Updated upstream
         
         Debug.Log("NPCInteractionManager 초기화 완료 (빠른 템포 모드)");
+=======
+>>>>>>> Stashed changes
     }
-    
+
     private void Update()
     {
         // 현재 상호작용 중인 NPC가 있는지 확인
@@ -152,16 +196,81 @@ public class NPCInteractionManager : MonoBehaviour
         
         Debug.Log($"NPC {npc.GetName()}와(과) 상호작용 시작 (빠른 템포 모드)");
     }
+<<<<<<< Updated upstream
     
+=======
+
+>>>>>>> Stashed changes
     // 현재 상호작용 지속
+    // ⭐ 수정된 ContinueInteraction 메서드 (기존 코드에 피버 모드 처리 추가)
     private void ContinueInteraction()
     {
         if (!isInteracting || currentInteractingNPC == null) return;
+<<<<<<< Updated upstream
         
         // 감정 매칭 체크 - 새로 추가된 부분만
         bool emotionMatched = CheckEmotionMatch(currentInteractingNPC);
         
         // 감정이 매칭되지 않으면 꼬시기 진행 안됨
+=======
+
+        // 🔥 EyeTracking으로 여전히 감지되는지 확인
+        bool stillDetected = IsNPCStillDetected(currentInteractingNPC);
+
+        if (!stillDetected)
+        {
+            // ⭐ interactionHoldTime 딜레이 추가: 감지 상실 시점 기록
+            if (interactionLostTime == 0f)
+            {
+                interactionLostTime = Time.time;
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"👁️ NPC 감지 상실 - {interactionHoldTime}초 대기 시작: {currentInteractingNPC.GetName()}");
+                }
+                return; // 바로 종료하지 않고 대기
+            }
+
+            // interactionHoldTime이 지났는지 확인
+            if (Time.time - interactionLostTime >= interactionHoldTime)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"👁️ NPC 감지 상실 {interactionHoldTime}초 경과로 상호작용 종료: {currentInteractingNPC.GetName()}");
+                }
+                EndInteraction();
+                return;
+            }
+            else
+            {
+                // 아직 설정 시간이 안 지났으므로 대기 계속
+                if (enableDebugLogs)
+                {
+                    float remainingTime = interactionHoldTime - (Time.time - interactionLostTime);
+                    Debug.Log($"👁️ NPC 감지 상실 대기 중: {currentInteractingNPC.GetName()} (남은시간: {remainingTime:F1}s)");
+                }
+
+                // ⭐ 중요: 대기 중에도 AutonomousDriver는 유지하고 꼬시기만 중단
+                // 감정 매칭이나 꼬시기 진행은 하지 않지만 바라보기는 유지
+                return; // 감정 매칭이나 시간 진행 없이 그냥 리턴
+            }
+        }
+        else
+        {
+            // 다시 감지되면 대기 시간 리셋
+            if (interactionLostTime > 0f)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"👁️ NPC 재감지 - 대기 상태 해제: {currentInteractingNPC.GetName()}");
+                }
+                interactionLostTime = 0f;
+            }
+        }
+
+        // 여기서부터는 기존 코드와 동일 (감정 매칭, 꼬시기 진행 등)
+        bool emotionMatched = CheckEmotionMatch(currentInteractingNPC);
+
+>>>>>>> Stashed changes
         if (!emotionMatched)
         {
             if (enableDebugLogs)
@@ -170,25 +279,47 @@ public class NPCInteractionManager : MonoBehaviour
             }
             return; // 시간 진행 안함
         }
+<<<<<<< Updated upstream
         
         // 기존 코드 그대로 유지 - 감정이 매칭될 때만 실행
         currentInteractionTime += Time.deltaTime * fastEmotionBuildupMultiplier;
         
+=======
+
+        float previousTime = currentInteractionTime;
+        currentInteractionTime += Time.deltaTime * fastEmotionBuildupMultiplier;
+
+        if (enableDebugLogs)
+        {
+            // ⭐ 수정: 피버 모드 상태에 따른 성공 시간 표시
+            float currentSuccessTime = GetCurrentRegularNPCSuccessTime();
+            Debug.Log($"💖 꼬시기 진행 중: {currentInteractingNPC.GetName()} " +
+                    $"({previousTime:F1}s → {currentInteractionTime:F1}s) " +
+                    $"목표: {(IsEliteNPC(currentInteractingNPC) ? minInteractionTime : currentSuccessTime):F1}s" +
+                    $"{(miniGameManagerRef != null && miniGameManagerRef.IsFeverModeActive() ? " 🔥(피버모드)" : "")}");
+        }
+
+>>>>>>> Stashed changes
         EmotionState playerEmotion = EmotionState.Neutral;
         if (playerEmotionController != null)
         {
             playerEmotion = playerEmotionController.GetCurrentEmotion();
         }
-        
+
         NPCEmotionController emotionController = currentInteractingNPC.GetComponent<NPCEmotionController>();
         if (emotionController != null)
         {
             ReactToPlayerEmotion(emotionController, playerEmotion);
         }
-        
+
         UpdateInteractionProgress();
+<<<<<<< Updated upstream
         
         // 기존 Elite NPC 및 일반 NPC 로직 그대로 유지
+=======
+
+        // Elite NPC 체크
+>>>>>>> Stashed changes
         if (currentInteractionTime >= minInteractionTime && IsEliteNPC(currentInteractingNPC))
         {
             if (ShouldTriggerMiniGame(currentInteractingNPC))
@@ -196,7 +327,12 @@ public class NPCInteractionManager : MonoBehaviour
                 TriggerMiniGame(currentInteractingNPC);
             }
         }
+<<<<<<< Updated upstream
         else if (!IsEliteNPC(currentInteractingNPC))
+=======
+        // ⭐ 수정: 일반 NPC 체크 - 피버 모드 상태에 따른 성공 시간 사용
+        else if (currentInteractionTime >= GetCurrentRegularNPCSuccessTime() && !IsEliteNPC(currentInteractingNPC))
+>>>>>>> Stashed changes
         {
             float requiredTime = regularNPCSuccessTime;
             
@@ -211,8 +347,14 @@ public class NPCInteractionManager : MonoBehaviour
             }
         }
     }
+<<<<<<< Updated upstream
     
     private bool CheckEmotionMatch(NPCController npc)
+=======
+
+    // 🔥 NPC가 여전히 감지되는지 확인
+    private bool IsNPCStillDetected(NPCController npc)
+>>>>>>> Stashed changes
     {
         if (playerEmotionController == null) return false;
         
@@ -485,7 +627,55 @@ public class NPCInteractionManager : MonoBehaviour
             }
         }
     }
+<<<<<<< Updated upstream
     
+=======
+
+    // ⭐ 피버 모드 상태에 따른 성공 시간 반환 메서드 (새로 추가)
+    private float GetCurrentRegularNPCSuccessTime()
+    {
+        // 피버 모드 상태 확인
+        if (miniGameManagerRef != null && miniGameManagerRef.IsFeverModeActive())
+        {
+            float feverModeTime = regularNPCSuccessTime * feverModeSuccessTimeMultiplier;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"🔥 피버 모드 활성화 - NPC 성공 시간: {regularNPCSuccessTime}s → {feverModeTime}s");
+            }
+            return feverModeTime;
+        }
+
+        return regularNPCSuccessTime;
+    }
+
+    // NPC 하이라이트 처리
+    private void HighlightNPC(NPCController npc, bool highlight)
+    {
+        // 하이라이트 로직 구현
+    }
+    
+    // 플레이어 감정에 따른 NPC 반응
+    private void ReactToPlayerEmotion(NPCEmotionController npcEmotion, EmotionState playerEmotion)
+    {
+        // 감정 반응 로직 구현
+    }
+
+    // 상호작용 진행도 업데이트
+    // ⭐ 수정된 UpdateInteractionProgress 메서드 (피버 모드 반영)
+    private void UpdateInteractionProgress()
+    {
+        float progress = IsEliteNPC(currentInteractingNPC) ?
+            currentInteractionTime / minInteractionTime :
+            currentInteractionTime / GetCurrentRegularNPCSuccessTime(); // ⭐ 수정: 피버 모드 상태 반영
+
+        if (enableDebugLogs)
+        {
+            string feverStatus = (miniGameManagerRef != null && miniGameManagerRef.IsFeverModeActive()) ? " 🔥" : "";
+            Debug.Log($"상호작용 진행도: {progress:P1}{feverStatus}");
+        }
+    }
+
+>>>>>>> Stashed changes
     // 현재 상호작용 중인 NPC 반환
     public NPCController GetCurrentInteractingNPC()
     {

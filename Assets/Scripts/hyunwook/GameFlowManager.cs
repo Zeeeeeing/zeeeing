@@ -29,7 +29,10 @@ public class GameFlowManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI progressText;
     [SerializeField] private Slider progressSlider;
 
-    [Header("Audio")]
+    [Header("Audio Integration")]
+    [SerializeField] private bool useAudioHapticManager = true; // 새 시스템 사용 여부
+
+    //[Header("Audio")]
     [SerializeField] private AudioSource bgmAudioSource;
     [SerializeField] private AudioClip tutorialBGM;
     [SerializeField] private AudioClip gameplayBGM;
@@ -79,8 +82,14 @@ public class GameFlowManager : MonoBehaviour
         if (playerEmotionController == null)
             playerEmotionController = FindAnyObjectByType<PlayerEmotionController>();
 
-        if (bgmAudioSource == null)
-            bgmAudioSource = GetComponent<AudioSource>();
+        //if (bgmAudioSource == null)
+        //    bgmAudioSource = GetComponent<AudioSource>();
+
+        // AudioHapticManager 초기화 확인
+        if (useAudioHapticManager && AudioHapticManager.Instance == null)
+        {
+            Debug.LogWarning("[GameFlow] AudioHapticManager가 씬에 없습니다. 자동 생성됩니다.");
+        }
 
         // UI 컨트롤러들 자동 찾기
         if (tutorialController == null)
@@ -279,10 +288,8 @@ public class GameFlowManager : MonoBehaviour
         currentPhase = GamePhase.Tutorial;
         phaseTimer = 0f;
 
-        // ⭐ HUD 제어를 더 안전하게
         SetHUDSafely(false, "튜토리얼 시작");
 
-        // 튜토리얼 UI 활성화
         if (tutorialController != null)
         {
             tutorialController.ShowTutorial(tutorialTime);
@@ -292,10 +299,16 @@ public class GameFlowManager : MonoBehaviour
             SetActiveUI(tutorialUI);
         }
 
-        // 튜토리얼 BGM 재생
-        PlayBGM(tutorialBGM);
+        // 수정된 BGM 재생
+        if (useAudioHapticManager && AudioHapticManager.Instance != null)
+        {
+            AudioHapticManager.Instance.PlayTutorialBGM();
+        }
+        else
+        {
+            PlayBGM(tutorialBGM); // 기존 방식
+        }
 
-        // 컨트롤 힌트 표시
         if (gameUIManager != null)
         {
             gameUIManager.ShowControlHints();
@@ -338,14 +351,18 @@ public class GameFlowManager : MonoBehaviour
         currentPhase = GamePhase.Gameplay;
         phaseTimer = 0f;
 
-        // ⭐ HUD 제어를 더 안전하게
         SetHUDSafely(true, "게임플레이 시작");
-
-        // 튜토리얼 UI 비활성화
         SetActiveUI(null);
 
-        // 게임플레이 BGM 재생
-        PlayBGM(gameplayBGM);
+        // 수정된 BGM 재생 (크로스페이드 적용)
+        if (useAudioHapticManager && AudioHapticManager.Instance != null)
+        {
+            AudioHapticManager.Instance.TransitionToGameplayBGM();
+        }
+        else
+        {
+            PlayBGM(gameplayBGM); // 기존 방식
+        }
 
         // 컨트롤 힌트 숨기기
         if (gameUIManager != null)
@@ -353,7 +370,6 @@ public class GameFlowManager : MonoBehaviour
             gameUIManager.HideControlHints();
         }
 
-        // ⭐ HUD 타이머 시작을 안전하게
         StartCoroutine(SafeStartHUDTimer());
 
         Debug.Log("게임플레이 페이즈 시작 (3분)");
@@ -407,9 +423,6 @@ public class GameFlowManager : MonoBehaviour
         currentPhase = GamePhase.Ending;
         phaseTimer = 0f;
 
-        Debug.Log("=== 엔딩 페이즈 시작 ===");
-
-        // HUD 제어를 더 안전하게
         SetHUDSafely(false, "엔딩 시작");
 
         // 엔딩 UI 활성화
@@ -419,8 +432,15 @@ public class GameFlowManager : MonoBehaviour
         // EndingController와 직접 활성화 둘 다 시도
         StartCoroutine(HandleEndingUIActivation());
 
-        // 엔딩 BGM 재생
-        PlayBGM(endingBGM);
+        // 수정된 BGM 재생 (크로스페이드 적용)
+        if (useAudioHapticManager && AudioHapticManager.Instance != null)
+        {
+            AudioHapticManager.Instance.TransitionToEndingBGM();
+        }
+        else
+        {
+            PlayBGM(endingBGM); // 기존 방식
+        }
 
         Debug.Log("엔딩 페이즈 시작 (30초)");
         OnPhaseChanged?.Invoke(currentPhase);
@@ -535,19 +555,19 @@ public class GameFlowManager : MonoBehaviour
 
     private string GetTargetSceneName(float completionRate)
     {
-        if (completionRate >= 100f) return "S score";
-        if (completionRate >= 80f) return "A score";
-        if (completionRate >= 60f) return "B score";
-        if (completionRate >= 40f) return "C score";
+        if (completionRate >= 80f) return "S score";
+        if (completionRate >= 60f) return "A score";
+        if (completionRate >= 40f) return "B score";
+        if (completionRate >= 20f) return "C score";
         return "D score";
     }
 
     private string GetPerformanceGrade(float completionRate)
     {
-        if (completionRate >= 100f) return "S";
-        if (completionRate >= 80f) return "A";
-        if (completionRate >= 60f) return "B";
-        if (completionRate >= 40f) return "C";
+        if (completionRate >= 80f) return "S";
+        if (completionRate >= 60f) return "A";
+        if (completionRate >= 40f) return "B";
+        if (completionRate >= 20f) return "C";
         return "D";
     }
     #endregion
@@ -607,6 +627,12 @@ public class GameFlowManager : MonoBehaviour
         // {
         //     MiniGameManager.Instance.AddScore(npcScore, $"NPC_Seduced_{npc.GetName()}");
         // }
+
+        // 유혹 성공 오디오 + 햅틱 효과 추가
+        if (useAudioHapticManager && AudioHapticManager.Instance != null)
+        {
+            AudioHapticManager.Instance.PlaySeductionSuccess();
+        }
 
         string npcType = npc.IsEliteNPC() ? "Elite" : "Regular";
         string completionMethod = npc.IsMiniGameCompleted() ? "미니게임" : "일반 꼬시기";
@@ -722,11 +748,22 @@ public class GameFlowManager : MonoBehaviour
     #region Audio Management
     private void PlayBGM(AudioClip clip)
     {
-        if (bgmAudioSource != null && clip != null)
+        if (useAudioHapticManager)
         {
-            bgmAudioSource.clip = clip;
-            bgmAudioSource.loop = true;
-            bgmAudioSource.Play();
+            // 새로운 시스템 사용
+            if (AudioHapticManager.Instance != null)
+            {
+                AudioHapticManager.Instance.PlayBGM(clip);
+            }
+        }
+        else
+        {
+            // 기존 시스템 (호환성 유지)
+            if (bgmAudioSource != null && clip != null)
+            {
+                bgmAudioSource.clip = clip;
+                bgmAudioSource.Play();
+            }
         }
     }
     #endregion

@@ -10,7 +10,7 @@ public class VRButtonInteraction : MonoBehaviour
         // VR 컨트롤러와 충돌했는지 확인
         if (other.CompareTag("VRController"))
         {
-            Debug.Log("VR 컨트롤러가 버튼을 눌렀습니다!");
+            // Debug.Log("VR 컨트롤러가 버튼을 눌렀습니다!");
             
             // 게임 시작 메서드 호출
             if (gameStartManager != null)

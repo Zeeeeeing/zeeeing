@@ -334,19 +334,19 @@ public class HeartGazeMiniGame : MonoBehaviour
                 Debug.Log($"👁️ EyeTracking으로 하트 감지: {heart.name}, 거리: {distance:F2}m");
             }
         }
-        
+
         // ⭐ 백업: 화면 중앙 기반 감지 (EyeTracking 실패 시)
         if (gazedHeart == null)
         {
             // 물리 레이캐스트로 직접 하트 감지
             Ray gazeRay = new Ray(cameraTransform.position, cameraTransform.forward);
             RaycastHit[] hits = Physics.RaycastAll(gazeRay, maxSpawnDistance + 1f);
-            
+
             // 레이캐스트로 감지된 모든 오브젝트 확인
             foreach (RaycastHit hit in hits)
             {
                 GameObject hitObject = hit.collider.gameObject;
-                
+
                 // 활성 하트 목록에 있는지 확인
                 if (activeHearts.Contains(hitObject))
                 {
@@ -356,25 +356,25 @@ public class HeartGazeMiniGame : MonoBehaviour
                         gazedHeart = hitObject;
                         closestDistance = distance;
                     }
-                    
+
                     Debug.Log($"🎯 레이캐스트로 하트 감지 (백업): {hitObject.name}, 거리: {distance:F2}m");
                 }
             }
-            
+
             // 3차 백업: 각도 기반 감지
             if (gazedHeart == null)
             {
                 foreach (GameObject heart in activeHearts)
                 {
                     if (heart == null) continue;
-                    
+
                     // 시선 방향 계산
                     Vector3 directionToHeart = (heart.transform.position - cameraTransform.position).normalized;
                     float dotProduct = Vector3.Dot(cameraTransform.forward, directionToHeart);
-                    
+
                     // 거리 계산
                     float distance = Vector3.Distance(cameraTransform.position, heart.transform.position);
-                    
+
                     // 더 엄격한 각도 조건
                     if (dotProduct > 0.85f && distance <= maxSpawnDistance && distance < closestDistance)
                     {
@@ -385,7 +385,7 @@ public class HeartGazeMiniGame : MonoBehaviour
                 }
             }
         }
-        
+
         // 시선 대상 변경 처리
         if (currentGazedHeart != gazedHeart)
         {

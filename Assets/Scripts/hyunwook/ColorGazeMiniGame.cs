@@ -4,6 +4,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using ZeeeingGaze;
 
+
+[System.Serializable]
+public class DifficultyColorSettings
+{
+    public float colorChangeInterval = 1f;
+    public float requiredMatchingTime = 1f;
+    public bool enableAutoColorChange = true;
+}
+
 public class ColorGazeMiniGame : MonoBehaviour
 {
     [Header("Game Settings - Fast Tempo")]
@@ -23,7 +32,37 @@ public class ColorGazeMiniGame : MonoBehaviour
     [SerializeField] private float easyTimeLimit = 20f; // 감소 (30 -> 20)
     [SerializeField] private float normalTimeLimit = 15f; // 감소 (20 -> 15)
     [SerializeField] private float hardTimeLimit = 12f; // 감소 (15 -> 12)
-    
+
+    [Header("Fast Color Change Settings")]
+    [SerializeField] private bool enableAutoColorChange = true; // 자동 색깔 변경 활성화
+    private float lastColorChangeTime = 0f; // 마지막 색깔 변경 시간
+    private Coroutine autoColorChangeCoroutine; // 자동 색깔 변경 코루틴
+
+    [Header("Difficulty Settings")]
+    [SerializeField]
+    private DifficultyColorSettings easySettings = new DifficultyColorSettings
+    {
+        colorChangeInterval = 2.5f,
+        requiredMatchingTime = 2f,
+        enableAutoColorChange = true
+    };
+
+    [SerializeField]
+    private DifficultyColorSettings normalSettings = new DifficultyColorSettings
+    {
+        colorChangeInterval = 2f,
+        requiredMatchingTime = 1.5f,
+        enableAutoColorChange = true
+    };
+
+    [SerializeField]
+    private DifficultyColorSettings hardSettings = new DifficultyColorSettings
+    {
+        colorChangeInterval = 1.0f,
+        requiredMatchingTime = 1.0f,
+        enableAutoColorChange = true
+    };
+
     [Header("UI References")]
     [SerializeField] private Image targetColorDisplay;
     [SerializeField] private TMPro.TextMeshProUGUI timerText;
@@ -37,7 +76,9 @@ public class ColorGazeMiniGame : MonoBehaviour
     private float remainingTime;
     private bool isGameActive = false;
     private float matchingTime = 0f;
-    
+    private DifficultyColorSettings currentSettings;
+    private Coroutine colorChangeCoroutine;
+
     // 색상-감정 매핑용 캐시
     private Dictionary<EmotionState, Color> emotionColors = new Dictionary<EmotionState, Color>();
     
@@ -65,72 +106,96 @@ public class ColorGazeMiniGame : MonoBehaviour
             playerEmotionController = FindAnyObjectByType<PlayerEmotionController>();
             if (playerEmotionController == null)
             {
-                Debug.LogWarning("PlayerEmotionController를 찾을 수 없습니다. 게임이 제대로 작동하지 않을 수 있습니다.");
+                // Debug.LogWarning("PlayerEmotionController를 찾을 수 없습니다. 게임이 제대로 작동하지 않을 수 있습니다.");
             }
         }
     }
-    
+
     public void StartMiniGame(int difficulty = 1)
     {
         // 필요한 참조 확인
         if (gameUI == null)
         {
-            Debug.LogWarning("gameUI가 null입니다! Unity Inspector에서 할당해주세요.");
+            // Debug.LogWarning("gameUI가 null입니다! Unity Inspector에서 할당해주세요.");
             gameUI = GameObject.Find("ColorGamePanel");
             if (gameUI == null)
             {
-                Debug.LogError("ColorGamePanel을 찾을 수 없습니다! UI가 표시되지 않을 수 있습니다.");
+                // Debug.LogError("ColorGamePanel을 찾을 수 없습니다! UI가 표시되지 않을 수 있습니다.");
             }
         }
 
         // 난이도에 따른 설정
-        switch(difficulty)
+        switch (difficulty)
         {
             case 0: // Easy
                 requiredMatches = easyRequiredMatches;
                 timeLimit = easyTimeLimit;
+                currentSettings = easySettings;
                 break;
             case 1: // Normal
                 requiredMatches = normalRequiredMatches;
                 timeLimit = normalTimeLimit;
+                currentSettings = normalSettings;
                 break;
             case 2: // Hard
                 requiredMatches = hardRequiredMatches;
                 timeLimit = hardTimeLimit;
+                currentSettings = hardSettings;
                 break;
         }
-        
+
         // 게임 초기화
         matchesCompleted = 0;
         remainingTime = timeLimit;
         isGameActive = true;
         matchingTime = 0f;
-        
+        lastColorChangeTime = Time.time; // ⭐ 추가: 색깔 변경 시간 초기화
+
         if (gameUI != null)
         {
             gameUI.SetActive(true);
-            Debug.Log("ColorGazeMiniGame UI 활성화됨 (빠른 템포 모드)");
+            // Debug.Log("ColorGazeMiniGame UI 활성화됨 (빠른 템포 모드)");
         }
 
         // 색상-감정 매핑 캐시 초기화
         CacheEmotionColors();
-        
+
         // 첫 번째 타겟 감정 선택
         SelectRandomEmotion();
-        
+
         // UI 업데이트
         UpdateUI();
-        
+
+        // ⭐ 추가: 자동 색깔 변경 코루틴 시작
+        if (enableAutoColorChange && autoColorChangeCoroutine == null)
+        {
+            autoColorChangeCoroutine = StartCoroutine(AutoColorChangeRoutine());
+        }
+
         // 이벤트 구독 - NPC 감정 변화 대신 플레이어 감정 변화 이벤트 사용
         if (playerEmotionController != null)
         {
             playerEmotionController.OnEmotionChanged += OnPlayerEmotionChanged;
         }
-        
+
         // 게임 시작 알림
         if (OnGameStarted != null) OnGameStarted.Invoke();
     }
-    
+
+    private IEnumerator AutoColorChangeRoutine()
+    {
+        while (isGameActive)
+        {
+            yield return new WaitForSeconds(currentSettings.colorChangeInterval);
+
+            if (isGameActive)
+            {
+                SelectRandomEmotion();
+                lastColorChangeTime = Time.time;
+            }
+        }
+    }
+
     private void CacheEmotionColors()
     {
         emotionColors.Clear();
@@ -168,7 +233,7 @@ public class ColorGazeMiniGame : MonoBehaviour
             targetColorDisplay.color = color;
         }
         
-        Debug.Log($"새로운 타겟 감정: {targetEmotion} ({targetEmotion.GetEmotionName()})");
+        // Debug.Log($"새로운 타겟 감정: {targetEmotion} ({targetEmotion.GetEmotionName()})");
     }
     
     private void Update()
@@ -190,31 +255,36 @@ public class ColorGazeMiniGame : MonoBehaviour
             GameOver(false);
         }
     }
-    
+
     // 플레이어 감정 확인 메서드
+    // ⭐ 수정된 CheckPlayerEmotion 메서드 (빠른 매칭 시간 적용)
     private void CheckPlayerEmotion()
     {
         if (playerEmotionController == null) return;
-        
+
         // 현재 플레이어 감정 가져오기
         EmotionState currentPlayerEmotion = playerEmotionController.GetCurrentEmotion();
-        
+
         // 타겟 감정과 일치하는지 확인
         if (currentPlayerEmotion == targetEmotion)
         {
             // 일치 시간 증가
             matchingTime += Time.deltaTime;
-            
+
+            // ⭐ 수정: 빠른 매칭 시간 사용
+            float currentRequiredTime = currentSettings.requiredMatchingTime;
+
             // 일정 시간 이상 유지되면 매치 성공
-            if (matchingTime >= requiredMatchingTime)
+            if (matchingTime >= currentRequiredTime)
             {
                 // 매치 성공
                 matchesCompleted++;
                 matchingTime = 0f;
-                
+                lastColorChangeTime = Time.time; // ⭐ 추가: 성공 시 색깔 변경 시간 업데이트
+
                 // 성공 피드백
                 PlaySuccessFeedback();
-                
+
                 // 모든 매치를 완료했는지 확인
                 if (matchesCompleted >= requiredMatches)
                 {
@@ -222,7 +292,7 @@ public class ColorGazeMiniGame : MonoBehaviour
                 }
                 else
                 {
-                    // 다음 감정 선택
+                    // ⭐ 수정: 즉시 다음 감정 선택 (더 빠른 변화)
                     SelectRandomEmotion();
                 }
             }
@@ -232,14 +302,8 @@ public class ColorGazeMiniGame : MonoBehaviour
             // 감정이 일치하지 않으면 타이머 리셋
             matchingTime = 0f;
         }
-        
-        // 매칭 진행도 UI 업데이트
-        if (emotionMatchProgressBar != null)
-        {
-            emotionMatchProgressBar.fillAmount = matchingTime / requiredMatchingTime;
-        }
     }
-    
+
     // 플레이어 감정 변경 이벤트 핸들러
     private void OnPlayerEmotionChanged(EmotionState newEmotion)
     {
@@ -273,7 +337,7 @@ public class ColorGazeMiniGame : MonoBehaviour
     private void PlaySuccessFeedback()
     {
         // 성공 피드백 (간단하게)
-        Debug.Log($"매치 성공! ({matchesCompleted}/{requiredMatches})");
+        // Debug.Log($"매치 성공! ({matchesCompleted}/{requiredMatches})");
         
         // 컨트롤러 진동 (간단하게)
         try
@@ -291,44 +355,58 @@ public class ColorGazeMiniGame : MonoBehaviour
             // VR 컨트롤러가 없을 경우 무시
         }
     }
-    
+
     private void GameOver(bool success)
     {
         try
         {
             isGameActive = false;
-            
+
+            // ⭐ 추가: 자동 색깔 변경 코루틴 정지
+            if (autoColorChangeCoroutine != null)
+            {
+                StopCoroutine(autoColorChangeCoroutine);
+                autoColorChangeCoroutine = null;
+            }
+
             // 이벤트 구독 해제
             if (playerEmotionController != null)
             {
                 playerEmotionController.OnEmotionChanged -= OnPlayerEmotionChanged;
             }
-            
+
             // 게임 UI 비활성화 (중요: 여기서 명시적으로 비활성화)
             if (gameUI != null)
                 gameUI.SetActive(false);
-            
+
             // 게임 완료 이벤트 호출
-            if (OnGameCompleted != null) 
+            if (OnGameCompleted != null)
             {
-                Debug.Log($"ColorGame 완료 이벤트 발생: 성공={success}, 점수={matchesCompleted} (빠른 템포 모드)");
+                // Debug.Log($"ColorGame 완료 이벤트 발생: 성공={success}, 점수={matchesCompleted} (빠른 색깔 변화 모드)");
                 OnGameCompleted.Invoke(success, matchesCompleted);
             }
             else
             {
-                Debug.LogWarning("OnGameCompleted 이벤트가 null입니다. 이벤트 구독자가 없습니다.");
+                // Debug.LogWarning("OnGameCompleted 이벤트가 null입니다. 이벤트 구독자가 없습니다.");
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"GameOver 중 오류 발생: {e.Message}\n{e.StackTrace}");
+            // Debug.LogError($"GameOver 중 오류 발생: {e.Message}\n{e.StackTrace}");
         }
     }
-    
+
     public void StopGame()
     {
         if (isGameActive)
         {
+            // ⭐ 추가: 자동 색깔 변경 코루틴 정지
+            if (autoColorChangeCoroutine != null)
+            {
+                StopCoroutine(autoColorChangeCoroutine);
+                autoColorChangeCoroutine = null;
+            }
+
             GameOver(false);
         }
     }

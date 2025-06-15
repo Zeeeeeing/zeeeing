@@ -274,60 +274,63 @@ namespace ZeeeingGaze
         {
             return followers != null ? followers.Count : 0;
         }
-        
+
         private void Update()
         {
             if (player == null) return;
-            
+
             // 무효한 팔로워 제거 (성능 최적화: 10프레임마다 실행)
             if (Time.frameCount % 10 == 0)
             {
                 RemoveInvalidFollowers();
             }
-            
+
             // 팔로워 위치 업데이트
             for (int i = 0; i < followers.Count; i++)
             {
                 var data = followers[i];
-                
+
                 // null 체크 (안전)
                 if (data == null || data.trans == null) continue;
-                
-                // ⭐ 추가 안전장치: Y축이 너무 낮아지면 초기 Y로 복구
-                if (data.trans.position.y < data.initialY - 2f)
+
+                // ⭐ 수정: 플레이어의 현재 Y 좌표를 사용하도록 변경
+                float targetY = player.position.y;
+
+                // ⭐ 추가 안전장치: Y축이 너무 낮아지면 플레이어 Y로 복구
+                if (data.trans.position.y < targetY - 2f)
                 {
-                    // Debug.LogWarning($"[FollowerManager] {data.npcController.GetName()}이(가) 바닥 아래로 떨어짐! Y축 복구: {data.trans.position.y} → {data.initialY}");
+                    // Debug.LogWarning($"[FollowerManager] {data.npcController.GetName()}이(가) 바닥 아래로 떨어짐! Y축 복구: {data.trans.position.y} → {targetY}");
                     Vector3 recoveryPos = data.trans.position;
-                    recoveryPos.y = data.initialY;
+                    recoveryPos.y = targetY;
                     data.trans.position = recoveryPos;
                 }
-                
+
                 // 플레이어 뒤 (i+1)*followDistance 위치 계산 (XZ)
                 Vector3 basePos = player.position - player.forward * (followDistance * (i + 1));
                 Vector3 targetPos = new Vector3(
                     basePos.x,
-                    data.initialY,  // 초기 Y 고정
+                    targetY,  // ⭐ 수정: 플레이어의 현재 Y 좌표 사용
                     basePos.z
                 );
-                
+
                 try
                 {
-                    // ⭐ 수정: Y축은 항상 고정, XZ만 부드럽게 이동
+                    // ⭐ 수정: Y축을 플레이어와 맞추도록 변경
                     Vector3 currentPos = data.trans.position;
                     Vector3 newPos = Vector3.MoveTowards(
-                        new Vector3(currentPos.x, data.initialY, currentPos.z), // 현재 위치의 Y를 초기 Y로 강제 설정
+                        new Vector3(currentPos.x, targetY, currentPos.z), // 현재 위치의 Y를 플레이어 Y로 강제 설정
                         targetPos,
                         moveSpeed * Time.deltaTime
                     );
-                    
-                    // Y축 재차 확인
-                    newPos.y = data.initialY;
+
+                    // Y축 재차 확인 - 플레이어 Y와 맞춤
+                    newPos.y = targetY;
                     data.trans.position = newPos;
-                    
+
                     // 플레이어 바라보며 부드럽게 회전
                     Vector3 lookDirection = player.position - data.trans.position;
                     lookDirection.y = 0; // Y축 회전만 처리
-                    
+
                     if (lookDirection.sqrMagnitude > 0.01f)
                     {
                         Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
@@ -344,7 +347,7 @@ namespace ZeeeingGaze
                 }
             }
         }
-        
+
         // 무효한 팔로워 제거 (null 참조 등)
         private void RemoveInvalidFollowers()
         {
