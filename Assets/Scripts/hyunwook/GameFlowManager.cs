@@ -390,14 +390,6 @@ public class GameFlowManager : MonoBehaviour
         {
             StartEndingPhase();
         }
-
-        // 중간 진행 상황 체크 (격려 메시지 등)
-        float progress = (float)seducedNPCCount / targetNPCCount;
-        if (progress < 0.3f && phaseTimer > gameplayTime * 0.5f)
-        {
-            // 진행이 느린 경우 힌트 메시지 표시 등
-            Debug.Log("진행이 느립니다. NPC들과 더 적극적으로 상호작용해보세요!");
-        }
     }
     #endregion
 
@@ -508,7 +500,7 @@ public class GameFlowManager : MonoBehaviour
         int finalScore = hudController != null ? hudController.score : 0;
         int followingCount = ZeeeingGaze.FollowerManager.Instance != null ? ZeeeingGaze.FollowerManager.Instance.GetFollowingCount() : seducedNPCCount;
 
-        float completionRate = (float)seducedNPCCount / targetNPCCount * 100f;
+        float completionRate = (float)followingCount / targetNPCCount * 100f;
         string grade = GetPerformanceGrade(completionRate);
         string targetScene = GetTargetSceneName(completionRate);
 
@@ -734,7 +726,8 @@ public class GameFlowManager : MonoBehaviour
     #region Game Control
     private void UpdateProgress()
     {
-        OnProgressUpdated?.Invoke(seducedNPCCount, targetNPCCount);
+        int followingCount = ZeeeingGaze.FollowerManager.Instance != null ? ZeeeingGaze.FollowerManager.Instance.GetFollowingCount() : seducedNPCCount;
+        OnProgressUpdated?.Invoke(followingCount, targetNPCCount);
     }
 
     private void CompletDemo()
@@ -745,7 +738,8 @@ public class GameFlowManager : MonoBehaviour
         OnDemoCompleted?.Invoke();
 
         // 최종 점수 계산
-        float completionRate = (float)seducedNPCCount / targetNPCCount * 100f;
+        int followingCount = ZeeeingGaze.FollowerManager.Instance != null ? ZeeeingGaze.FollowerManager.Instance.GetFollowingCount() : seducedNPCCount;
+        float completionRate = (float)followingCount / targetNPCCount * 100f;
 
         // 데모 완료 후 처리
         StartCoroutine(HandleDemoCompletion(completionRate));
