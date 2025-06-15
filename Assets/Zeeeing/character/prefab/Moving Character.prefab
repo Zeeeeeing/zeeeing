@@ -1553,9 +1553,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7288174367802448652, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5728822201755220763}
-    - targetCorrespondingSourceObject: {fileID: 7288174367802448652, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: -5206495065659175339}
     - targetCorrespondingSourceObject: {fileID: 5452800561899524249, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6762318644612274019}
@@ -1595,10 +1592,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.15363365
-  m_Height: 0.38170147
+  m_Radius: 0.10696598
+  m_Height: 0.23984528
   m_Direction: 1
-  m_Center: {x: 0.00001114607, y: 1.583119, z: 0.03106973}
+  m_Center: {x: 0.000011146069, y: 1.6391945, z: 0.1024255}
 --- !u!54 &222914846958310350
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1852,6 +1849,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   emotionController: {fileID: 1590685006929988257}
+  navMeshAgent: {fileID: 0}
   navMeshObstacle: {fileID: 7920494931742295564}
   animator: {fileID: 8993384242937438399}
   npcName: Minji
@@ -1866,27 +1864,7 @@ MonoBehaviour:
   isGhost: 0
   miniGameCompleted: 0
   feverModePointMultiplier: 2
---- !u!65 &-5206495065659175339
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8074816144279296966}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.5503462, y: 1.7375256, z: 0.3128622}
-  m_Center: {x: -0.0005316436, y: 0.88480264, z: 0.0865984}
+  persistentVFXPrefab: {fileID: 0}
 --- !u!4 &8912924736814719177 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7969779978021740547, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}

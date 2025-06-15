@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 9012c1d3c690f7e458c46240cd63fc79
+guid: 6b6e5636ee932f043b8bae81d77ab230
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -31,11 +31,11 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: Snake Hip Hop Dance
+      name: mixamo.com
       takeName: mixamo.com
       internalID: -203655887218126122
       firstFrame: 0
-      lastFrame: 458
+      lastFrame: 71
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

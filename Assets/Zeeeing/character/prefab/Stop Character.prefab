@@ -1547,9 +1547,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7288174367802448652, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6296924009877419323}
-    - targetCorrespondingSourceObject: {fileID: 7288174367802448652, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3705793121937570791}
     - targetCorrespondingSourceObject: {fileID: 5452800561899524249, guid: 828d2ce3c8fb74f498e8bb757fa113a6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2011180647860312733}
@@ -1817,6 +1814,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   emotionController: {fileID: 2578945361599220907}
+  navMeshAgent: {fileID: 0}
   navMeshObstacle: {fileID: 3086237500965018579}
   animator: {fileID: 7235845537587949429}
   npcName: 
@@ -1831,24 +1829,4 @@ MonoBehaviour:
   isGhost: 0
   miniGameCompleted: 0
   feverModePointMultiplier: 2
---- !u!65 &3705793121937570791
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7542274817227789324}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.5503462, y: 1.7375256, z: 0.3128622}
-  m_Center: {x: -0.0005316436, y: 0.88480264, z: 0.0865984}
+  persistentVFXPrefab: {fileID: 0}

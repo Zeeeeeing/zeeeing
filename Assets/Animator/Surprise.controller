@@ -172,7 +172,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Laying
+  m_Name: Surprise
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: Happy
@@ -268,7 +268,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -203655887218126122, guid: 39c0e7f17fc3b5240b7a72c205912be1, type: 3}
+  m_Motion: {fileID: -203655887218126122, guid: 6b19719ad5756a34bafc92dc7da2abf7, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
