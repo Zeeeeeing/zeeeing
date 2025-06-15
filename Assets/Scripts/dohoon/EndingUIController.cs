@@ -190,10 +190,10 @@ public class EndingUIController : MonoBehaviour
     
     private string CalculateGrade(float completionRate)
     {
-        if (completionRate >= 100f) return "S";
-        if (completionRate >= 80f) return "A";
-        if (completionRate >= 60f) return "B";
-        if (completionRate >= 40f) return "C";
+        if (completionRate >= 80f) return "S";
+        if (completionRate >= 60f) return "A";
+        if (completionRate >= 40f) return "B";
+        if (completionRate >= 20f) return "C";
         return "D";
     }
     

@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ZeeeingGaze;
 
 public class FeverUI : MonoBehaviour
 {
@@ -93,12 +94,23 @@ public class FeverUI : MonoBehaviour
         if (active)
         {
             StartFeverModeEffects();
-            PlayFeverSound(feverActivationSound);
+            //PlayFeverSound(feverActivationSound);
+            
+            // 피버 모드 진입 오디오 + 햅틱
+            if (AudioHapticManager.Instance != null)
+            {
+                AudioHapticManager.Instance.PlayFeverModeEnter();
+            }
         }
         else
         {
             StopFeverModeEffects();
-            PlayFeverSound(feverEndSound);
+            //PlayFeverSound(feverEndSound);
+
+            if (AudioHapticManager.Instance != null)
+            {
+                AudioHapticManager.Instance.TransitionBackToGameplayBGM();
+            }
         }
     }
 
@@ -116,7 +128,7 @@ public class FeverUI : MonoBehaviour
             feverModeParticles.gameObject.SetActive(true);
             // 필요시 Play()를 명시적으로 호출할 수도 있습니다. SetActive(true) 시 자동으로 재생되도록 설정된 경우가 많습니다.
             // feverModeParticles.Play(); 
-            Debug.Log("[FeverUI] 🔥 Fever 파티클 활성화!");
+            // Debug.Log("[FeverUI] 🔥 Fever 파티클 활성화!");
         }
         
         // (이하 오디오 관련 코드는 동일)
@@ -141,7 +153,7 @@ public class FeverUI : MonoBehaviour
         if (feverModeParticles != null)
         {
             feverModeParticles.gameObject.SetActive(false);
-            Debug.Log("[FeverUI] ❄️ Fever 파티클 비활성화!");
+            // Debug.Log("[FeverUI] ❄️ Fever 파티클 비활성화!");
         }
         
         // (이하 오디오 및 색상 복구 코드는 동일)
@@ -164,15 +176,38 @@ public class FeverUI : MonoBehaviour
             audioSource.Stop();
         }
     }
-    
+
     // --- 이하 나머지 코드는 이전과 거의 동일합니다 ---
-    
+
     public void SetFeverGauge(float value)
     {
         targetGaugeValue = Mathf.Clamp01(value);
-        if (gaugeAnimationCoroutine != null) StopCoroutine(gaugeAnimationCoroutine);
-        gaugeAnimationCoroutine = StartCoroutine(AnimateGaugeToTarget());
-        if (feverPercentageText != null) feverPercentageText.text = $"{Mathf.RoundToInt(targetGaugeValue * 100)}%";
+
+        // GameObject가 활성화되어 있을 때만 코루틴 시작
+        if (gameObject.activeInHierarchy)
+        {
+            if (gaugeAnimationCoroutine != null) StopCoroutine(gaugeAnimationCoroutine);
+            gaugeAnimationCoroutine = StartCoroutine(AnimateGaugeToTarget());
+        }
+        else
+        {
+            // 비활성화 상태라면 즉시 값 설정
+            currentGaugeValue = targetGaugeValue;
+            UpdateGaugeVisuals();
+        }
+
+        if (feverPercentageText != null)
+            feverPercentageText.text = $"{Mathf.RoundToInt(targetGaugeValue * 100)}%";
+    }
+
+    private void OnEnable()
+    {
+        // GameObject가 활성화될 때 필요한 업데이트 수행
+        if (Mathf.Abs(currentGaugeValue - targetGaugeValue) > 0.01f)
+        {
+            if (gaugeAnimationCoroutine != null) StopCoroutine(gaugeAnimationCoroutine);
+            gaugeAnimationCoroutine = StartCoroutine(AnimateGaugeToTarget());
+        }
     }
 
     private IEnumerator AnimateGaugeToTarget()
@@ -261,7 +296,19 @@ public class FeverUI : MonoBehaviour
     {
         if (!isFeverModeActive) return;
         if (feverModeText != null) feverModeText.text = $"{Mathf.CeilToInt(remainingTime)}초";
-        SetFeverGauge(remainingTime / totalTime);
+
+        // GameObject 활성화 상태 확인
+        if (gameObject.activeInHierarchy)
+        {
+            SetFeverGauge(remainingTime / totalTime);
+        }
+        else
+        {
+            // 비활성화 상태라면 직접 값만 설정
+            targetGaugeValue = Mathf.Clamp01(remainingTime / totalTime);
+            currentGaugeValue = targetGaugeValue;
+            UpdateGaugeVisuals();
+        }
     }
 
     private void PlayFeverSound(AudioClip clip)

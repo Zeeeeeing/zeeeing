@@ -54,7 +54,7 @@ public class HUDController : MonoBehaviour
         // Awake에서 타이머 값만 초기화 (한 번만 실행되도록)
         if (!initialized)
         {
-            Debug.Log("[HUD] Awake() 호출 - 초기 값 설정");
+            // Debug.Log("[HUD] Awake() 호출 - 초기 값 설정");
             timeRemaining = maxTimeSeconds;
             running = false;
             score = 0;
@@ -71,14 +71,14 @@ public class HUDController : MonoBehaviour
             topHUDPanel = GameObject.Find("TopHUDPanel");
             if (topHUDPanel == null)
             {
-                Debug.LogWarning("[HUD] TopHUDPanel을 찾을 수 없습니다!");
+                // Debug.LogWarning("[HUD] TopHUDPanel을 찾을 수 없습니다!");
             }
         }
     }
 
     void Start()
     {
-        Debug.Log("[HUD] Start() 호출 - UI 초기화");
+        // Debug.Log("[HUD] Start() 호출 - UI 초기화");
 
         // UI 초기 설정
         InitializeUI();
@@ -95,7 +95,7 @@ public class HUDController : MonoBehaviour
         // HUD 초기 상태 설정 (비활성화 상태로 시작)
         SetHUDActive(false);
 
-        Debug.Log("[HUD] UI 초기화 완료 (LOVE 게이지 이벤트 시스템 + 피버 모드 제어 + HUD 제어 포함)");
+        // Debug.Log("[HUD] UI 초기화 완료 (LOVE 게이지 이벤트 시스템 + 피버 모드 제어 + HUD 제어 포함)");
     }
 
     private void InitializeUI()
@@ -124,7 +124,7 @@ public class HUDController : MonoBehaviour
             // 크기 조정 (월드 스페이스에서는 크기를 적절히 조정해야 함)
             hudCanvas.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
 
-            Debug.Log("[HUD] VR용 월드 스페이스 캔버스 설정 완료");
+            // Debug.Log("[HUD] VR용 월드 스페이스 캔버스 설정 완료");
         }
         else
         {
@@ -179,7 +179,7 @@ public class HUDController : MonoBehaviour
         {
             timeRemaining = 0f;
             running = false;
-            Debug.Log("[HUD] 타이머 종료!");
+            // Debug.Log("[HUD] 타이머 종료!");
             if (OnTimeUp != null)
                 OnTimeUp.Invoke();
         }
@@ -198,37 +198,37 @@ public class HUDController : MonoBehaviour
     {
         isHUDActive = active;
 
-        Debug.Log($"[HUD] SetHUDActive 호출됨: {active}");
+        // Debug.Log($"[HUD] SetHUDActive 호출됨: {active}");
 
         // TopHUDPanel 활성화/비활성화
         if (topHUDPanel != null)
         {
             topHUDPanel.SetActive(active);
-            Debug.Log($"[HUD] TopHUDPanel {(active ? "활성화" : "비활성화")} 완료");
+            // Debug.Log($"[HUD] TopHUDPanel {(active ? "활성화" : "비활성화")} 완료");
         }
         else
         {
-            Debug.LogError("[HUD] TopHUDPanel이 null입니다! Inspector에서 할당을 확인하세요.");
+            // Debug.LogError("[HUD] TopHUDPanel이 null입니다! Inspector에서 할당을 확인하세요.");
         }
 
         // 개별 패널들도 제어 (필요시)
         if (loveGaugePanel != null)
         {
             loveGaugePanel.SetActive(active);
-            Debug.Log($"[HUD] LoveGaugePanel {(active ? "활성화" : "비활성화")}");
+            // Debug.Log($"[HUD] LoveGaugePanel {(active ? "활성화" : "비활성화")}");
         }
         if (scorePanel != null)
         {
             scorePanel.SetActive(active);
-            Debug.Log($"[HUD] ScorePanel {(active ? "활성화" : "비활성화")}");
+            // Debug.Log($"[HUD] ScorePanel {(active ? "활성화" : "비활성화")}");
         }
         if (timerPanel != null)
         {
             timerPanel.SetActive(active);
-            Debug.Log($"[HUD] TimerPanel {(active ? "활성화" : "비활성화")}");
+            // Debug.Log($"[HUD] TimerPanel {(active ? "활성화" : "비활성화")}");
         }
 
-        Debug.Log($"[HUD] HUD 전체 {(active ? "활성화" : "비활성화")} 완료");
+        // Debug.Log($"[HUD] HUD 전체 {(active ? "활성화" : "비활성화")} 완료");
     }
 
     /// <summary>
@@ -260,7 +260,7 @@ public class HUDController : MonoBehaviour
                     timerPanel.SetActive(active);
                 break;
             default:
-                Debug.LogWarning($"[HUD] 알 수 없는 패널 이름: {panelName}");
+                // Debug.LogWarning($"[HUD] 알 수 없는 패널 이름: {panelName}");
                 break;
         }
     }
@@ -273,7 +273,7 @@ public class HUDController : MonoBehaviour
     // 하트 이미지 배열이 할당되어 있지 않으면 무시
     if (heartImages == null || heartImages.Length == 0)
     {
-        Debug.LogWarning("[HUD] 하트 이미지가 할당되지 않았습니다!");
+        // Debug.LogWarning("[HUD] 하트 이미지가 할당되지 않았습니다!");
         return;
     }
 
@@ -307,21 +307,21 @@ public class HUDController : MonoBehaviour
     // ⭐ LOVE 게이지가 가득 찬 경우 이벤트 발생 (피버 모드가 아닐 때만) - 디버깅 강화
     if (currentHearts >= maxHearts && !isFeverModeActive)
     {
-        Debug.Log("💖 [HUD] LOVE 게이지가 가득 찬 상태에서 피버 모드 활성화 신호!");
-        Debug.Log($"💖 [HUD] OnLoveGaugeFull 이벤트 발생 시도... (리스너 수: {OnLoveGaugeFull.GetPersistentEventCount()})");
+        // Debug.Log("💖 [HUD] LOVE 게이지가 가득 찬 상태에서 피버 모드 활성화 신호!");
+        // Debug.Log($"💖 [HUD] OnLoveGaugeFull 이벤트 발생 시도... (리스너 수: {OnLoveGaugeFull.GetPersistentEventCount()})");
         
         // ⭐ 이벤트 발생 전후 로그 추가
-        Debug.Log("💖 [HUD] OnLoveGaugeFull.Invoke() 호출 전");
+        // Debug.Log("💖 [HUD] OnLoveGaugeFull.Invoke() 호출 전");
         OnLoveGaugeFull?.Invoke();
-        Debug.Log("💖 [HUD] OnLoveGaugeFull.Invoke() 호출 후");
+        // Debug.Log("💖 [HUD] OnLoveGaugeFull.Invoke() 호출 후");
     }
     else if (currentHearts >= maxHearts && isFeverModeActive)
     {
-        Debug.Log("💖 [HUD] LOVE 게이지가 가득 찬 상태 (피버 모드 중이므로 이벤트 발생 안함)");
+        // Debug.Log("💖 [HUD] LOVE 게이지가 가득 찬 상태 (피버 모드 중이므로 이벤트 발생 안함)");
     }
     else
     {
-        Debug.Log($"💖 [HUD] LOVE 게이지 상태: {currentHearts}/{maxHearts} (가득참 아님)");
+        // Debug.Log($"💖 [HUD] LOVE 게이지 상태: {currentHearts}/{maxHearts} (가득참 아님)");
     }
 }
 
@@ -340,7 +340,7 @@ public class HUDController : MonoBehaviour
         // 점수 증가
         score += delta;
 
-        Debug.Log($"[HUD] 점수 업데이트: +{delta} (총 점수: {score}, 피버 모드: {isFeverModeActive})");
+        // Debug.Log($"[HUD] 점수 업데이트: +{delta} (총 점수: {score}, 피버 모드: {isFeverModeActive})");
 
         // UI 텍스트 업데이트
         if (scoreText != null)
@@ -358,7 +358,7 @@ public class HUDController : MonoBehaviour
             // 피버 모드 중에는 하트 증가 차단 (핵심 기능!)
             if (isFeverModeActive && blockHeartIncreaseInFever)
             {
-                Debug.Log($"🔥 [HUD] 피버 모드 중이므로 하트 증가가 차단되었습니다! (점수만 증가: +{delta})");
+                // Debug.Log($"🔥 [HUD] 피버 모드 중이므로 하트 증가가 차단되었습니다! (점수만 증가: +{delta})");
                 return; // 하트 증가 로직을 건너뜀
             }
 
@@ -372,7 +372,7 @@ public class HUDController : MonoBehaviour
                 // 마지막 하트 점수 업데이트
                 lastHeartScore = score - (score % scorePerHeart);
 
-                Debug.Log($"[HUD] ❤️ 하트 {heartsToAdd}개 추가됨! 현재 하트: {currentHearts}/{maxHearts}, 다음 하트까지 필요 점수: {scorePerHeart - (score % scorePerHeart)}");
+                // Debug.Log($"[HUD] ❤️ 하트 {heartsToAdd}개 추가됨! 현재 하트: {currentHearts}/{maxHearts}, 다음 하트까지 필요 점수: {scorePerHeart - (score % scorePerHeart)}");
             }
         }
     }
@@ -388,39 +388,39 @@ public class HUDController : MonoBehaviour
         // 점수를 새로운 총점으로 설정 (덮어쓰기)
         score = newScore;
 
-        Debug.Log($"📊 [HUD] 점수 동기화: {previousScore} → {newScore}");
+        // Debug.Log($"📊 [HUD] 점수 동기화: {previousScore} → {newScore}");
 
         // UI 텍스트 즉시 업데이트
         if (scoreText != null)
         {
             scoreText.text = $"{score}";
-            Debug.Log($"📊 [HUD] scoreText 업데이트: {score}");
+            // Debug.Log($"📊 [HUD] scoreText 업데이트: {score}");
         }
         else
         {
-            Debug.LogWarning("📊 [HUD] scoreText가 null입니다!");
+            // Debug.LogWarning("📊 [HUD] scoreText가 null입니다!");
         }
 
         if (scoreDigitsText != null)
         {
             scoreDigitsText.text = score.ToString("D8");
-            Debug.Log($"📊 [HUD] scoreDigitsText 업데이트: {score:D8}");
+            // Debug.Log($"📊 [HUD] scoreDigitsText 업데이트: {score:D8}");
         }
         else
         {
-            Debug.LogWarning("📊 [HUD] scoreDigitsText가 null입니다!");
+            // Debug.LogWarning("📊 [HUD] scoreDigitsText가 null입니다!");
         }
 
         // 하트 게이지는 점수 증가분만큼만 처리
         int scoreDelta = newScore - previousScore;
         if (scoreDelta > 0)
         {
-            Debug.Log($"📊 [HUD] 점수 증가분: +{scoreDelta}");
+            // Debug.Log($"📊 [HUD] 점수 증가분: +{scoreDelta}");
 
             // 피버 모드 중에는 하트 증가 차단
             if (isFeverModeActive && blockHeartIncreaseInFever)
             {
-                Debug.Log($"🔥 [HUD] 피버 모드 중 하트 증가 차단됨 (+{scoreDelta}점)");
+                // Debug.Log($"🔥 [HUD] 피버 모드 중 하트 증가 차단됨 (+{scoreDelta}점)");
                 return;
             }
 
@@ -429,17 +429,17 @@ public class HUDController : MonoBehaviour
 
             if (heartsToAdd > 0)
             {
-                Debug.Log($"❤️ [HUD] 하트 추가 계산: 현재점수({score}) - 마지막하트점수({lastHeartScore}) = {score - lastHeartScore}, 하트당점수({scorePerHeart}) → {heartsToAdd}개 추가");
+                // Debug.Log($"❤️ [HUD] 하트 추가 계산: 현재점수({score}) - 마지막하트점수({lastHeartScore}) = {score - lastHeartScore}, 하트당점수({scorePerHeart}) → {heartsToAdd}개 추가");
 
                 AddHeart(heartsToAdd);
                 lastHeartScore = score - (score % scorePerHeart);
 
-                Debug.Log($"❤️ [HUD] 하트 {heartsToAdd}개 추가됨! 새 마지막하트점수: {lastHeartScore}");
+                // Debug.Log($"❤️ [HUD] 하트 {heartsToAdd}개 추가됨! 새 마지막하트점수: {lastHeartScore}");
             }
         }
         else if (scoreDelta < 0)
         {
-            Debug.LogWarning($"📊 [HUD] 점수가 감소했습니다: {scoreDelta} (이상함!)");
+            // Debug.LogWarning($"📊 [HUD] 점수가 감소했습니다: {scoreDelta} (이상함!)");
         }
     }
 
@@ -450,7 +450,7 @@ public class HUDController : MonoBehaviour
         currentHearts = Mathf.Clamp(hearts, 0, maxHearts);
         UpdateHeartDisplay();
 
-        Debug.Log($"[HUD] LOVE 게이지 직접 업데이트: {previousHearts} → {currentHearts} (피버 모드: {isFeverModeActive})");
+        // Debug.Log($"[HUD] LOVE 게이지 직접 업데이트: {previousHearts} → {currentHearts} (피버 모드: {isFeverModeActive})");
     }
 
     // 수정된 하트 추가 (피버 모드 제어 추가)
@@ -459,7 +459,7 @@ public class HUDController : MonoBehaviour
         // 피버 모드 중에는 하트 증가 차단 (옵션)
         if (isFeverModeActive && blockHeartIncreaseInFever)
         {
-            Debug.Log($"🔥 [HUD] 피버 모드 중이므로 하트 추가가 차단되었습니다! (요청량: +{amount})");
+            // Debug.Log($"🔥 [HUD] 피버 모드 중이므로 하트 추가가 차단되었습니다! (요청량: +{amount})");
             return;
         }
 
@@ -467,7 +467,7 @@ public class HUDController : MonoBehaviour
         currentHearts = Mathf.Clamp(currentHearts + amount, 0, maxHearts);
         UpdateHeartDisplay();
 
-        Debug.Log($"[HUD] ❤️ 하트 추가: {previousHearts} → {currentHearts} (+{amount})");
+        // Debug.Log($"[HUD] ❤️ 하트 추가: {previousHearts} → {currentHearts} (+{amount})");
     }
 
     // 수정된 하트 제거 (피버 모드 상관없이 항상 가능)
@@ -477,7 +477,7 @@ public class HUDController : MonoBehaviour
         currentHearts = Mathf.Clamp(currentHearts - amount, 0, maxHearts);
         UpdateHeartDisplay();
 
-        Debug.Log($"[HUD] 💔 하트 제거: {previousHearts} → {currentHearts} (-{amount})");
+        // Debug.Log($"[HUD] 💔 하트 제거: {previousHearts} → {currentHearts} (-{amount})");
     }
 
     // LOVE 게이지를 가득 채우는 메서드 (피버 모드 제어 추가)
@@ -485,7 +485,7 @@ public class HUDController : MonoBehaviour
     {
         if (isFeverModeActive && blockHeartIncreaseInFever)
         {
-            Debug.Log($"🔥 [HUD] 피버 모드 중이므로 LOVE 게이지 강제 충전이 차단되었습니다!");
+            // Debug.Log($"🔥 [HUD] 피버 모드 중이므로 LOVE 게이지 강제 충전이 차단되었습니다!");
             return;
         }
 
@@ -500,7 +500,7 @@ public class HUDController : MonoBehaviour
         // 하트 점수 추적도 리셋
         lastHeartScore = score - (score % scorePerHeart);
 
-        Debug.Log($"[HUD] LOVE 게이지 완전 리셋 (점수 추적도 리셋: lastHeartScore = {lastHeartScore})");
+        // Debug.Log($"[HUD] LOVE 게이지 완전 리셋 (점수 추적도 리셋: lastHeartScore = {lastHeartScore})");
     }
 
     // LOVE 게이지가 가득 찬 상태인지 확인
@@ -540,12 +540,12 @@ public class HUDController : MonoBehaviour
         bool previousState = isFeverModeActive;
         isFeverModeActive = active;
 
-        Debug.Log($"🔥 [HUD] 피버 모드 상태 변경: {previousState} → {isFeverModeActive}");
+        // Debug.Log($"🔥 [HUD] 피버 모드 상태 변경: {previousState} → {isFeverModeActive}");
 
         // 피버 모드 비활성화 시 자동으로 LOVE 게이지 리셋
         if (!active && previousState)
         {
-            Debug.Log("🔥 [HUD] 피버 모드 종료로 인한 LOVE 게이지 자동 리셋");
+            // Debug.Log("🔥 [HUD] 피버 모드 종료로 인한 LOVE 게이지 자동 리셋");
             ResetLoveGauge();
         }
 
@@ -571,7 +571,7 @@ public class HUDController : MonoBehaviour
     public void SetBlockHeartIncreaseInFever(bool block)
     {
         blockHeartIncreaseInFever = block;
-        Debug.Log($"[HUD] 피버 모드 중 하트 증가 차단 설정: {blockHeartIncreaseInFever}");
+        // Debug.Log($"[HUD] 피버 모드 중 하트 증가 차단 설정: {blockHeartIncreaseInFever}");
     }
 
     /// <summary>
@@ -585,7 +585,7 @@ public class HUDController : MonoBehaviour
     // 타이머 시작 함수
     public void StartTimer()
     {
-        Debug.Log("[HUD] StartTimer() 호출됨");
+        // Debug.Log("[HUD] StartTimer() 호출됨");
 
         // 타이머가 이미 실행 중이면 무시
         if (running) return;
@@ -597,7 +597,7 @@ public class HUDController : MonoBehaviour
         }
 
         running = true;
-        Debug.Log("[HUD] 타이머 시작됨! - 남은 시간: " + timeRemaining);
+        // Debug.Log("[HUD] 타이머 시작됨! - 남은 시간: " + timeRemaining);
 
         // UI 업데이트
         UpdateTimerDisplay();
@@ -608,7 +608,7 @@ public class HUDController : MonoBehaviour
     {
         timeRemaining = maxTimeSeconds;
         running = true;
-        Debug.Log("[HUD] 타이머 강제 시작! - 남은 시간: " + timeRemaining);
+        // Debug.Log("[HUD] 타이머 강제 시작! - 남은 시간: " + timeRemaining);
 
         // UI 업데이트
         UpdateTimerDisplay();
@@ -625,59 +625,7 @@ public class HUDController : MonoBehaviour
 
     void LoadEndScene()
     {
-        Debug.Log("[HUD] 시간 종료! EndScene으로 이동");
+        // Debug.Log("[HUD] 시간 종료! EndScene으로 이동");
         SceneManager.LoadScene("EndScene");
     }
-
-    // 디버그용 메서드들 (피버 모드 제어 + HUD 제어 추가!)
-    [ContextMenu("Debug: Add 100 Score")]
-    public void DebugAdd100Score()
-    {
-        UpdateScore(100);
-        Debug.Log("[HUD] 디버그: 100점 추가");
-    }
-
-    [ContextMenu("Debug: Add 1 Heart")]
-    public void DebugAdd1Heart()
-    {
-        AddHeart(1);
-        Debug.Log("[HUD] 디버그: 하트 1개 추가");
-    }
-
-    [ContextMenu("Debug: Fill Love Gauge")]
-    public void DebugFillLoveGauge()
-    {
-        FillLoveGauge();
-        Debug.Log("[HUD] 디버그: LOVE 게이지 가득 채움");
-    }
-
-    [ContextMenu("Debug: Reset Love Gauge")]
-    public void DebugResetLoveGauge()
-    {
-        ResetLoveGauge();
-        Debug.Log("[HUD] 디버그: LOVE 게이지 리셋");
-    }
-
-    [ContextMenu("Debug: Toggle Fever Mode")]
-    public void DebugToggleFeverMode()
-    {
-        SetFeverMode(!isFeverModeActive);
-        Debug.Log($"[HUD] 디버그: 피버 모드 토글 → {isFeverModeActive}");
-    }
-
-    [ContextMenu("Debug: Toggle Heart Block in Fever")]
-    public void DebugToggleHeartBlockInFever()
-    {
-        SetBlockHeartIncreaseInFever(!blockHeartIncreaseInFever);
-        Debug.Log($"[HUD] 디버그: 피버 모드 중 하트 차단 토글 → {blockHeartIncreaseInFever}");
-    }
-
-    [ContextMenu("Debug: Toggle HUD Active")]
-    public void DebugToggleHUDActive()
-    {
-        SetHUDActive(!isHUDActive);
-        Debug.Log($"[HUD] 디버그: HUD 활성화 토글 → {isHUDActive}");
-    }
-    
-    
 }
