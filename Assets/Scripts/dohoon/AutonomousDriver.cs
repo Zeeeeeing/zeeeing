@@ -55,7 +55,7 @@ public class AutonomousDriver : MonoBehaviour
 
         // 첫 목적지 설정
         PickNewDestination();
-        
+
         Debug.Log($"[{gameObject.name}] AutonomousDriver 초기화 - 원본 속도: {originalMoveSpeed}, 회전: {originalRotationSpeed}");
     }
 
@@ -83,7 +83,7 @@ public class AutonomousDriver : MonoBehaviour
             Debug.Log($"  - 플레이어 위치: {playerTransform?.position}");
             Debug.Log($"  - 현재 NPC 위치: {transform.position}");
             Debug.Log($"  - 거리: {(playerTransform ? Vector3.Distance(transform.position, playerTransform.position) : 0):F2}m");
-            
+
             // 속도를 0으로 설정
             moveSpeed = 0f;
             
@@ -94,13 +94,13 @@ public class AutonomousDriver : MonoBehaviour
         else
         {
             Debug.Log($"[{gameObject.name}] 상호작용 모드 해제 - 정상 이동 재개");
-            
+
             // 🔧 원본 속도 정확히 복원
             moveSpeed = originalMoveSpeed;
             rotationSpeed = originalRotationSpeed;
-            
+
             Debug.Log($"  - 복원된 속도: {moveSpeed} (원본: {originalMoveSpeed})");
-            
+
             // 이동 재개
             agent.isStopped = false;
             agent.speed = moveSpeed; // Agent 속도도 동기화

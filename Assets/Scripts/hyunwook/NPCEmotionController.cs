@@ -103,10 +103,10 @@ namespace ZeeeingGaze
             meshRenderer = GetComponent<MeshRenderer>();
             
             // 매핑이 없는 경우 기본 매핑 추가
-            if (emotionMappings.Count == 0)
-            {
-                AddDefaultMappings();
-            }
+            //if (emotionMappings.Count == 0)
+            //{
+            //    AddDefaultMappings();
+            //}
             
             // 오디오 소스가 없는 경우 추가
             if (audioSource == null)
@@ -141,10 +141,10 @@ namespace ZeeeingGaze
             emotionMappings.Add(EmotionGazeMapping.CreateAngryMapping());
             emotionMappings.Add(EmotionGazeMapping.CreateSadMapping());
             emotionMappings.Add(EmotionGazeMapping.CreateEmbarrassedMapping());
-            
+
             InitializeMappingDictionary();
         }
-        
+
         private void OnEnable()
         {
             // 활성화될 때 EyeInteractable이 설정되어 있으면 구독 시작
@@ -158,7 +158,7 @@ namespace ZeeeingGaze
         {
             SetupEyeInteractable();
             SetupEyeTrackingTarget();
-            SetInitialEmotionState();
+            //SetInitialEmotionState();
         }
         
         private void SetupEyeInteractable()
@@ -221,13 +221,13 @@ namespace ZeeeingGaze
             DetectPlayerGaze();
             
             // 현재 감정 상태에 따른 시선 반응 처리
-            ProcessEmotionResponse();
+            //ProcessEmotionResponse();
             
             // 시각적 피드백 적용
             ApplyVisualFeedback();
             
             // 감정 상태 리셋 타이머 처리
-            HandleEmotionResetTimer();
+            //HandleEmotionResetTimer();
             
             // 감정 시퀀스 처리
             if (isProcessingSequence)

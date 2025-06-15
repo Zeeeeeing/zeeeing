@@ -32,7 +32,7 @@ public class VRButtonInteractable : MonoBehaviour
         Collider collider = GetComponent<Collider>();
         if (collider == null)
         {
-            Debug.LogWarning("VRButtonInteractable에 콜라이더가 없습니다. 상호작용이 작동하지 않을 수 있습니다.");
+            // Debug.LogWarning("VRButtonInteractable에 콜라이더가 없습니다. 상호작용이 작동하지 않을 수 있습니다.");
             BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
             boxCollider.size = new Vector3(2, 2, 0.5f); // 더 큰 콜라이더
         }
@@ -52,7 +52,7 @@ public class VRButtonInteractable : MonoBehaviour
         // 크기 변경 (약간 확대)
         transform.localScale = originalScale * highlightScale;
         
-        Debug.Log("레이가 버튼에 닿았습니다: " + gameObject.name);
+        // Debug.Log("레이가 버튼에 닿았습니다: " + gameObject.name);
         
         // 효과음 재생 (옵션)
         AudioSource audioSource = GetComponent<AudioSource>();
@@ -74,13 +74,13 @@ public class VRButtonInteractable : MonoBehaviour
         // 크기 원복
         transform.localScale = originalScale;
         
-        Debug.Log("레이가 버튼에서 벗어났습니다: " + gameObject.name);
+        // Debug.Log("레이가 버튼에서 벗어났습니다: " + gameObject.name);
     }
     
     // 레이가 버튼에 있는 상태에서 트리거 버튼을 눌렀을 때
     public void OnRayTrigger()
     {
-        Debug.Log("버튼이 클릭되었습니다: " + gameObject.name);
+        // Debug.Log("버튼이 클릭되었습니다: " + gameObject.name);
         
         // 효과음 재생 (옵션)
         AudioSource audioSource = GetComponent<AudioSource>();
