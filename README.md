@@ -46,8 +46,8 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 ### 게임 흐름
 1. **튜토리얼** (10초) - Eye Tracking 사용법 학습
 2. **메인 게임플레이** (180초) - NPC 상호작용 및 미니게임
-3. **성과 평가** (20초) - S/A/B/C/D 등급 시스템
-4. **엔딩** - 멀티 엔딩 시스템
+3. **성과 평가** (10초) - S/A/B/C/D 등급 시스템
+4. **엔딩** (10초) - 멀티 엔딩 시스템
 
 ### 게임 시스템 구조
 
@@ -73,8 +73,8 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 
 1. **저장소 클론**
 ```bash
-git clone https://github.com/zeeeing-team/gaze-vr.git
-cd gaze-vr
+git clone https://github.com/Zeeeeeing/zeeeing.git
+cd zeeeing
 ```
 
 2. **Unity에서 프로젝트 열기**
@@ -86,8 +86,8 @@ cd gaze-vr
    - XR Management에서 Oculus 활성화
 
 4. **Eye Tracking 권한 설정**
-   - Quest Pro에서 Eye Tracking 권한 허용
    - Meta Developer Hub에서 개발자 모드 활성화
+   - Quest Pro에서 Eye Tracking 권한 허용
 ---
 
 ## 프로젝트 구조
