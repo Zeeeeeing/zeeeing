@@ -25,7 +25,7 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 |------|------|-----------|
 | **정현욱** | Eye Tracking & Minigame| • Eye Tracking API 구현<br>• 감정-시선 매핑 시스템<br>• 미니게임 구조 설계 |
 | **곽도훈** | UI/UX & System Integration | • NPC AI 시스템<br>• UI/UX 디자인<br>• 게임 시스템 통합 |
-| **류시우** | VFX & Animation | • VFX 제작 (Laser, Particle)<br>• 애니메이션 시스템<br>• 파티클 시스템 |
+| **류시우** | VFX & Animation | • VFX 제작 (Laser, Particle)<br>• 애니메이션 시스템<br>• 파티클 시스템<br>• 파티클 시스템 |
 
 ---
 
