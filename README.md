@@ -51,7 +51,7 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 
 ### 게임 시스템 구조
 
-#### 일반 NPC 꼬시기
+#### 일반 NPC 유혹하하기
 - **Eye Tracking 호감도 시스템**: 시선을 통한 감정 교류
 - **성공 시 보상**: +100점 획득 (피버모드 시 점수 추가)
 - **플레이 방법**: 감정-시선 매핑 테이블에 따라 적절한 시선 패턴으로 상호작용
@@ -98,9 +98,9 @@ cd gaze-vr
 
 ## 문서
 
-- [**제안서**](docs/TECHNICAL_GUIDE.md) - ~~~~
-- [**기술 문서**](docs/DEVELOPER_GUIDE.md) - ~~~~
-- [**사용자 매뉴얼**](docs/USER_MANUAL.md) - 게임 플레이 가이드
+- [**제안서**](docs/PROPOSAL_REPORT.pdf)
+- [**최종 보고서**](docs/FINAL_REPORT.pdf)
+- [**사용자 매뉴얼**](docs/USER_MANUAL.pdf) - 게임 소개 및 플레이 가이드
 
 ---
 
