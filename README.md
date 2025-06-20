@@ -43,7 +43,7 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 
 ## 게임 플레이
 
-[**플로우 차트**](docs/FlowChart.jpg)
+[**플로우 차트**](docs/FlowChart.png)
 
 ### 게임 흐름
 1. **튜토리얼** (10초) - Eye Tracking 사용법 학습
