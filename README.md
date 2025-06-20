@@ -43,6 +43,8 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 
 ## 게임 플레이
 
+[**플로우 차트**](docs/FlowChart.jpg)
+
 ### 게임 흐름
 1. **튜토리얼** (10초) - Eye Tracking 사용법 학습
 2. **메인 게임플레이** (180초) - NPC 상호작용 및 미니게임
@@ -50,6 +52,8 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 4. **엔딩** (10초) - 멀티 엔딩 시스템
 
 ### 게임 시스템 구조
+
+[**게임 플레이 이미지**](docs/GamePlay.jpg) - 세부 내용은 최종 보고서와 판넬을 참고해주세요!
 
 #### 일반 NPC 유혹하기
 - **Eye Tracking 호감도 시스템**: 시선을 통한 감정 교류
@@ -98,7 +102,7 @@ cd zeeeing
 
 ## 문서
 
-- [**제안서**](docs/PROPOSAL_REPORT.pdf)
+- [**데모 판넬**](docs/DEMO_PANEL.pdf)
 - [**최종 보고서**](docs/FINAL_REPORT.pdf)
 - [**사용자 매뉴얼**](docs/USER_MANUAL.pdf) - 게임 소개 및 플레이 가이드
 
