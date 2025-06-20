@@ -53,7 +53,7 @@ Meta Quest Pro의 Eye Tracking 기술을 활용한 VR 시뮬레이션 게임입�
 
 ### 게임 시스템 구조
 
-[**게임 플레이 이미지**](docs/GamePlay.jpg) - 세부 내용은 최종 보고서와 판넬을 참고해주세요!
+[**게임 플레이 이미지**](docs/GamePlay.png) - 세부 내용은 최종 보고서와 판넬을 참고해주세요!
 
 #### 일반 NPC 유혹하기
 - **Eye Tracking 호감도 시스템**: 시선을 통한 감정 교류
